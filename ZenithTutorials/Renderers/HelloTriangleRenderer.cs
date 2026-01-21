@@ -25,12 +25,14 @@ internal class HelloTriangleRenderer : IRenderer
         struct VSInput
         {
             float3 Position : POSITION0;
+
             float4 Color    : COLOR0;
         };
 
         struct PSInput
         {
             float4 Position : SV_POSITION;
+
             float4 Color    : COLOR0;
         };
 
@@ -39,6 +41,7 @@ internal class HelloTriangleRenderer : IRenderer
             PSInput output;
             output.Position = float4(input.Position, 1.0);
             output.Color = input.Color;
+
             return output;
         }
 

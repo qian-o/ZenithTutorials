@@ -45,6 +45,7 @@ internal class TexturedQuadRenderer : IRenderer
             PSInput output;
             output.Position = float4(input.Position, 1.0);
             output.TexCoord = input.TexCoord;
+
             return output;
         }
 
