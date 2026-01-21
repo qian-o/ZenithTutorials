@@ -13,6 +13,7 @@ internal static class App
 
     static App()
     {
+        // Create window with no graphics API (we manage rendering ourselves)
         window = Window.Create(WindowOptions.Default with
         {
             API = GraphicsAPI.None,
@@ -22,6 +23,7 @@ internal static class App
 
         window.Initialize();
 
+        // Select graphics backend based on platform
         if (OperatingSystem.IsWindows())
         {
             Context = GraphicsContext.CreateDirectX12(useValidationLayer: true);
@@ -35,11 +37,13 @@ internal static class App
             Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
         }
 
+        // Log validation messages for debugging
         Context.ValidationMessage += (sender, args) =>
         {
             Console.WriteLine($"[{args.Source} - {args.Severity}] {args.Message}");
         };
 
+        // Create platform-specific surface for rendering
         Surface surface;
         if (OperatingSystem.IsWindows())
         {
@@ -58,6 +62,7 @@ internal static class App
             throw new NotImplementedException();
         }
 
+        // Create swap chain for double-buffered rendering
         SwapChain = Context.CreateSwapChain(new()
         {
             Surface = surface,
@@ -82,13 +87,13 @@ internal static class App
 
         window.Render += delta =>
         {
+            // Skip rendering when window is minimized
             if (Width <= 0 || Height <= 0)
             {
                 return;
             }
 
             renderer.Render();
-
             SwapChain.Present();
         };
 
@@ -99,8 +104,8 @@ internal static class App
                 return;
             }
 
+            // Notify renderer first, then resize swap chain
             renderer.Resize(Width, Height);
-
             SwapChain.Resize(Width, Height);
         };
 
@@ -111,7 +116,6 @@ internal static class App
     {
         SwapChain.Dispose();
         Context.Dispose();
-
         window.Dispose();
     }
 }
