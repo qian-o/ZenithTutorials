@@ -6,20 +6,20 @@ using Buffer = Zenith.NET.Buffer;
 
 namespace ZenithTutorials.Renderers;
 
-/// <summary>
-/// Vertex structure with position and color data.
-/// LayoutKind.Sequential ensures memory layout matches GPU expectations.
-/// </summary>
-[StructLayout(LayoutKind.Sequential)]
-internal struct Vertex(Vector3 position, Vector4 color)
-{
-    public Vector3 Position = position;
-
-    public Vector4 Color = color;
-}
-
 internal class HelloTriangleRenderer : IRenderer
 {
+    /// <summary>
+    /// Vertex structure with position and color data.
+    /// LayoutKind.Sequential ensures memory layout matches GPU expectations.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Vertex(Vector3 position, Vector4 color)
+    {
+        public Vector3 Position = position;
+
+        public Vector4 Color = color;
+    }
+
     // Slang shader source (HLSL-like syntax, compiled at runtime)
     private const string shaderSource = """
         struct VSInput
