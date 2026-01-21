@@ -109,14 +109,14 @@ internal class TexturedQuadRenderer : IRenderer
             MaxLod = uint.MaxValue
         });
 
-        // Define resource layout (describes what resources the shader expects)
+        // Define resource layout using BindingHelper for cross-platform compatibility
         resourceLayout = App.Context.CreateResourceLayout(new()
         {
-            Bindings =
-            [
-                new() { Type = ResourceType.Texture, Index = 0, Count = 1, StageFlags = ShaderStageFlags.Pixel },
-                new() { Type = ResourceType.Sampler, Index = 0, Count = 1, StageFlags = ShaderStageFlags.Pixel }
-            ]
+            Bindings = BindingHelper.Bindings
+            (
+                new() { Type = ResourceType.Texture, Count = 1, StageFlags = ShaderStageFlags.Pixel },
+                new() { Type = ResourceType.Sampler, Count = 1, StageFlags = ShaderStageFlags.Pixel }
+            )
         });
 
         // Create resource set (binds actual resources to the layout)
