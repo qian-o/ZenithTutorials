@@ -23,9 +23,6 @@ internal class TexturedQuadRenderer : IRenderer
     }
 
     private const string shaderSource = """
-        Texture2D shaderTexture;
-        SamplerState samplerState;
-
         struct VSInput
         {
             float3 Position : POSITION0;
@@ -39,6 +36,9 @@ internal class TexturedQuadRenderer : IRenderer
 
             float2 TexCoord : TEXCOORD0;
         };
+
+        Texture2D shaderTexture;
+        SamplerState samplerState;
 
         PSInput VSMain(VSInput input)
         {
