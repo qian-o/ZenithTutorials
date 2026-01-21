@@ -167,7 +167,7 @@ internal class TexturedQuadRenderer : IRenderer
             Depth = 1.0f,
             Stencil = 0,
             Flags = ClearFlags.All
-        });
+        }, preprocessResourceSets: resourceSet);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetResourceSet(resourceSet, 0);  // Bind resource set at slot 0
