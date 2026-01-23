@@ -15,7 +15,7 @@ internal class ComputeShaderRenderer : IRenderer
 
     private const string computeShaderSource = """
         Texture2D inputTexture;
-        RWTexture2D<float4> outputTexture;
+        RWTexture2D outputTexture;
 
         [numthreads(16, 16, 1)]
         void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
