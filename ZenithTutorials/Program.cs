@@ -1,6 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-App.Run<ComputeShaderRenderer>();
+App.Run<IndirectDrawingRenderer>();
 
 App.Cleanup();
