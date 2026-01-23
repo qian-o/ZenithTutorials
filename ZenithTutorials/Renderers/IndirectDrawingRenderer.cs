@@ -11,6 +11,9 @@ internal class IndirectDrawingRenderer : IRenderer
 {
     private const int InstanceCount = 25;  // 5x5 grid of cubes
 
+    /// <summary>
+    /// Vertex structure with position and color data.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     private struct Vertex(Vector3 position, Vector4 color)
     {
