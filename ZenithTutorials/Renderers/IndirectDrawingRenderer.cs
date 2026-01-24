@@ -117,8 +117,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             StrideInBytes = (uint)sizeof(IndirectDrawIndexedArgs),
             Flags = BufferUsageFlags.Indirect | BufferUsageFlags.MapWrite
         });
-
-        indirectBuffer.Upload([new IndirectDrawIndexedArgs
+        indirectBuffer.Upload([new IndirectDrawIndexedArgs()
         {
             IndexCount = (uint)indices.Length,
             InstanceCount = InstanceCount,
@@ -193,9 +192,9 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         {
             for (int x = 0; x < gridSize; x++)
             {
-                float offsetX = (x - (gridSize / 2)) * 1.5f;
-                float offsetY = (y - (gridSize / 2)) * 1.5f;
-                float rotation = rotationAngle * (1.0f + (index * 0.1f));
+                float offsetX = (x - gridSize / 2) * 1.5f;
+                float offsetY = (y - gridSize / 2) * 1.5f;
+                float rotation = rotationAngle * (1.0f + index * 0.1f);
 
                 instances[index] = new()
                 {
@@ -203,7 +202,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
                             * Matrix4x4.CreateRotationY(rotation)
                             * Matrix4x4.CreateRotationX(rotation * 0.5f)
                             * Matrix4x4.CreateTranslation(offsetX, offsetY, 0),
-                    Color = new((float)x / gridSize, (float)y / gridSize, 1.0f - ((float)x / gridSize), 1.0f)
+                    Color = new((float)x / gridSize, (float)y / gridSize, 1.0f - (float)x / gridSize, 1.0f)
                 };
 
                 index++;
@@ -218,7 +217,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         Matrix4x4 view = Matrix4x4.CreateLookAt(new(0, 0, 8), Vector3.Zero, Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
 
-        viewConstantsBuffer.Upload([new ViewConstants { View = view, Projection = projection }], 0);
+        viewConstantsBuffer.Upload([new ViewConstants() { View = view, Projection = projection }], 0);
 
         CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
 
