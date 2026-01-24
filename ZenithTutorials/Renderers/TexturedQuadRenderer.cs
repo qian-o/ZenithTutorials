@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal class TexturedQuadRenderer : IRenderer
+internal unsafe class TexturedQuadRenderer : IRenderer
 {
     private const string ShaderSource = """
         struct VSInput
@@ -58,8 +58,8 @@ internal class TexturedQuadRenderer : IRenderer
 
         vertexBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)(Marshal.SizeOf<Vertex>() * vertices.Length),
-            StrideInBytes = (uint)Marshal.SizeOf<Vertex>(),
+            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
+            StrideInBytes = (uint)sizeof(Vertex),
             Flags = BufferUsageFlags.Vertex | BufferUsageFlags.MapWrite
         });
         vertexBuffer.Upload(vertices, 0);

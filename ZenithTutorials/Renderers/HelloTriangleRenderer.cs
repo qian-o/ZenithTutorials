@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal class HelloTriangleRenderer : IRenderer
+internal unsafe class HelloTriangleRenderer : IRenderer
 {
     private const string ShaderSource = """
         struct VSInput
@@ -47,8 +47,8 @@ internal class HelloTriangleRenderer : IRenderer
 
         vertexBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)(Marshal.SizeOf<Vertex>() * vertices.Length),
-            StrideInBytes = (uint)Marshal.SizeOf<Vertex>(),
+            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
+            StrideInBytes = (uint)sizeof(Vertex),
             Flags = BufferUsageFlags.Vertex | BufferUsageFlags.MapWrite
         });
         vertexBuffer.Upload(vertices, 0);
