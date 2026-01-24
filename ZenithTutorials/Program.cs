@@ -1,6 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-App.Run<RayTracingRenderer>();
+App.Run<HelloTriangleRenderer>();
 
 App.Cleanup();
