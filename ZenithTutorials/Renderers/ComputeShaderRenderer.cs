@@ -130,7 +130,7 @@ internal unsafe class ComputeShaderRenderer : IRenderer
             new(new(-1.0f,  1.0f, 0.0f), new(0.0f, 0.0f)),
             new(new( 1.0f,  1.0f, 0.0f), new(1.0f, 0.0f)),
             new(new( 1.0f, -1.0f, 0.0f), new(1.0f, 1.0f)),
-            new(new(-1.0f, -1.0f, 0.0f), new(0.0f, 1.0f)),
+            new(new(-1.0f, -1.0f, 0.0f), new(0.0f, 1.0f))
         ];
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
