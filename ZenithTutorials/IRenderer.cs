@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ZenithTutorials;
+﻿namespace ZenithTutorials;
 
 internal interface IRenderer : IDisposable
 {

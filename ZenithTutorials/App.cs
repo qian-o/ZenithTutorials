@@ -1,6 +1,4 @@
-﻿using System;
-using Silk.NET.Windowing;
-using Zenith.NET;
+﻿using Silk.NET.Windowing;
 using Zenith.NET.DirectX12;
 using Zenith.NET.Metal;
 using Zenith.NET.Vulkan;
