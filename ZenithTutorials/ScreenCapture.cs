@@ -135,7 +135,9 @@ public static class ScreenCapture
 
         [DllImport("comdlg32.dll", EntryPoint = "GetSaveFileNameW", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
+#pragma warning disable SYSLIB1054
         private static extern bool GetSaveFileNameNative(ref OpenFileName lpofn);
+#pragma warning restore SYSLIB1054
 
         public static unsafe nint GetSaveFileName(out string? filePath, string filter, string defaultExt, string defaultFileName)
         {
