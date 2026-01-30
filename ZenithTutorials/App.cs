@@ -12,9 +12,9 @@ internal static class App
     static App()
     {
         // Ensure platform is supported
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
         {
-            throw new PlatformNotSupportedException("This tutorial only supports Windows, macOS, and Linux.");
+            throw new PlatformNotSupportedException("This tutorial only supports Windows, Linux, and macOS.");
         }
 
         // Create window with no graphics API (we manage rendering ourselves)
@@ -35,17 +35,17 @@ internal static class App
 
             surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
         }
-        else if (OperatingSystem.IsMacOS())
-        {
-            Context = GraphicsContext.CreateMetal(useValidationLayer: true);
-
-            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
-        }
-        else
+        else if (OperatingSystem.IsLinux())
         {
             Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
 
             surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
+        }
+        else
+        {
+            Context = GraphicsContext.CreateMetal(useValidationLayer: true);
+
+            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
         }
 
         // Log validation messages for debugging
