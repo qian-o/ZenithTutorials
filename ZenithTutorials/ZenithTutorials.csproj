@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
-        <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
+        <PackageReference Include="Silk.NET.Input" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.Windowing" Version="2.23.0" />
         <PackageReference Include="Zenith.NET.DirectX12" Version="0.0.4" />
         <PackageReference Include="Zenith.NET.Extensions.ImageSharp" Version="0.0.4" />
         <PackageReference Include="Zenith.NET.Extensions.Slang" Version="0.0.4" />
