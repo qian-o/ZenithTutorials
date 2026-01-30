@@ -27,18 +27,25 @@ internal static class App
 
         window.Initialize();
 
-        // Select graphics backend based on platform
+        // Create graphics context and surface based on platform
+        Surface surface;
         if (OperatingSystem.IsWindows())
         {
             Context = GraphicsContext.CreateDirectX12(useValidationLayer: true);
+
+            surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
         }
         else if (OperatingSystem.IsMacOS())
         {
             Context = GraphicsContext.CreateMetal(useValidationLayer: true);
+
+            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
         }
         else
         {
             Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
+
+            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
         }
 
         // Log validation messages for debugging
@@ -46,21 +53,6 @@ internal static class App
         {
             Console.WriteLine($"[{args.Source} - {args.Severity}] {args.Message}");
         };
-
-        // Create platform-specific surface for rendering
-        Surface surface;
-        if (OperatingSystem.IsWindows())
-        {
-            surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
-        }
-        else
-        {
-            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
-        }
 
         // Create swap chain for double-buffered rendering
         SwapChain = Context.CreateSwapChain(new()
