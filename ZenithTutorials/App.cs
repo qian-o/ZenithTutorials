@@ -51,7 +51,7 @@ internal static class App
         }
         else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
         {
-            throw new NotImplementedException("TODO: Get CAMetalLayer from Silk.NET.Windowing");
+            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
         }
         else if (OperatingSystem.IsLinux())
         {
