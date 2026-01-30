@@ -51,13 +51,9 @@ internal static class App
         {
             surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
         }
-        else if (OperatingSystem.IsLinux())
-        {
-            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
-        }
         else
         {
-            throw new NotImplementedException();
+            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
         }
 
         // Create swap chain for double-buffered rendering
