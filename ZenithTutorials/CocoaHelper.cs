@@ -14,10 +14,10 @@ internal static partial class CocoaHelper
     private static partial nint Send(nint receiver, nint selector);
 
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
-    private static partial nint Send(nint receiver, nint selector, nint arg);
+    private static partial nint Send(nint receiver, nint selector, [MarshalAs(UnmanagedType.I1)] bool arg);
 
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
-    private static partial nint Send(nint receiver, nint selector, [MarshalAs(UnmanagedType.I1)] bool arg);
+    private static partial nint Send(nint receiver, nint selector, nint arg);
 
     public static nint CreateLayer(nint cocoa)
     {
@@ -25,8 +25,8 @@ internal static partial class CocoaHelper
         Send(layer, Selector("retain"));
 
         nint view = Send(cocoa, Selector("contentView"));
-        Send(view, Selector("setLayer:"), layer);
         Send(view, Selector("setWantsLayer:"), true);
+        Send(view, Selector("setLayer:"), layer);
 
         return layer;
     }
