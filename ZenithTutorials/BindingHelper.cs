@@ -1,6 +1,4 @@
-﻿using Zenith.NET;
-
-namespace ZenithTutorials;
+﻿namespace ZenithTutorials;
 
 internal static class BindingHelper
 {

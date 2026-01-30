@@ -1,15 +1,22 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal unsafe class SpinningCubeRenderer : IRenderer
+internal unsafe class IndirectDrawingRenderer : IRenderer
 {
-    private const string ShaderSource = """
-        struct MVPConstants
-        {
-            float4x4 Model;
+    private const int InstanceCount = 25;  // 5x5 grid of cubes
 
+    private const string ShaderSource = """
+        struct ViewConstants
+        {
             float4x4 View;
 
             float4x4 Projection;
+        };
+
+        struct InstanceData
+        {
+            float4x4 Model;
+
+            float4 Color;
         };
 
         struct VSInput
@@ -17,6 +24,8 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             float3 Position : POSITION0;
 
             float4 Color : COLOR0;
+
+            uint InstanceID : SV_InstanceID;
         };
 
         struct PSInput
@@ -26,16 +35,19 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             float4 Color : COLOR0;
         };
 
-        ConstantBuffer<MVPConstants> mvp;
+        ConstantBuffer<ViewConstants> view;
+        StructuredBuffer<InstanceData> instances;
 
         PSInput VSMain(VSInput input)
         {
-            float4 worldPos = mul(float4(input.Position, 1.0), mvp.Model);
-            float4 viewPos = mul(worldPos, mvp.View);
-        
+            InstanceData instance = instances[input.InstanceID];
+
+            float4 worldPos = mul(float4(input.Position, 1.0), instance.Model);
+            float4 viewPos = mul(worldPos, view.View);
+
             PSInput output;
-            output.Position = mul(viewPos, mvp.Projection);
-            output.Color = input.Color;
+            output.Position = mul(viewPos, view.Projection);
+            output.Color = input.Color * instance.Color;
 
             return output;
         }
@@ -48,42 +60,38 @@ internal unsafe class SpinningCubeRenderer : IRenderer
 
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
-    private readonly Buffer constantBuffer;
+    private readonly Buffer indirectBuffer;
+    private readonly Buffer viewConstantsBuffer;
+    private readonly Buffer instanceBuffer;
     private readonly ResourceLayout resourceLayout;
     private readonly ResourceSet resourceSet;
     private readonly GraphicsPipeline pipeline;
 
     private float rotationAngle;
 
-    public SpinningCubeRenderer()
+    public IndirectDrawingRenderer()
     {
         Vertex[] vertices =
         [
             // Front face
-            new(new(-0.5f, -0.5f,  0.5f), new(1.0f, 0.0f, 0.0f, 1.0f)),
-            new(new( 0.5f, -0.5f,  0.5f), new(0.0f, 1.0f, 0.0f, 1.0f)),
-            new(new( 0.5f,  0.5f,  0.5f), new(0.0f, 0.0f, 1.0f, 1.0f)),
-            new(new(-0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 0.0f, 1.0f)),
+            new(new(-0.5f, -0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
+            new(new( 0.5f, -0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
+            new(new( 0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
+            new(new(-0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             // Back face
-            new(new(-0.5f, -0.5f, -0.5f), new(1.0f, 0.0f, 1.0f, 1.0f)),
-            new(new( 0.5f, -0.5f, -0.5f), new(0.0f, 1.0f, 1.0f, 1.0f)),
+            new(new(-0.5f, -0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
+            new(new( 0.5f, -0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f,  0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
-            new(new(-0.5f,  0.5f, -0.5f), new(0.5f, 0.5f, 0.5f, 1.0f))
+            new(new(-0.5f,  0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f))
         ];
 
         uint[] indices =
         [
-            // Front
             0, 1, 2, 0, 2, 3,
-            // Back
             5, 4, 7, 5, 7, 6,
-            // Left
             4, 0, 3, 4, 3, 7,
-            // Right
             1, 5, 6, 1, 6, 2,
-            // Top
             3, 2, 6, 3, 6, 7,
-            // Bottom
             4, 5, 1, 4, 1, 0
         ];
 
@@ -103,25 +111,48 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         });
         indexBuffer.Upload(indices, 0);
 
-        constantBuffer = App.Context.CreateBuffer(new()
+        indirectBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)sizeof(MVPConstants),
-            StrideInBytes = (uint)sizeof(MVPConstants),
+            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs),
+            StrideInBytes = (uint)sizeof(IndirectDrawIndexedArgs),
+            Flags = BufferUsageFlags.Indirect | BufferUsageFlags.MapWrite
+        });
+        indirectBuffer.Upload([new IndirectDrawIndexedArgs()
+        {
+            IndexCount = (uint)indices.Length,
+            InstanceCount = InstanceCount,
+            FirstIndex = 0,
+            VertexOffset = 0,
+            FirstInstance = 0
+        }], 0);
+
+        viewConstantsBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)sizeof(ViewConstants),
+            StrideInBytes = (uint)sizeof(ViewConstants),
             Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
+        });
+
+        instanceBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(InstanceData) * InstanceCount),
+            StrideInBytes = (uint)sizeof(InstanceData),
+            Flags = BufferUsageFlags.ShaderResource | BufferUsageFlags.MapWrite
         });
 
         resourceLayout = App.Context.CreateResourceLayout(new()
         {
             Bindings = BindingHelper.Bindings
             (
-                new ResourceBinding() { Type = ResourceType.ConstantBuffer, Count = 1, StageFlags = ShaderStageFlags.Vertex }
+                new() { Type = ResourceType.ConstantBuffer, Count = 1, StageFlags = ShaderStageFlags.Vertex },
+                new() { Type = ResourceType.StructuredBuffer, Count = 1, StageFlags = ShaderStageFlags.Vertex }
             )
         });
 
         resourceSet = App.Context.CreateResourceSet(new()
         {
             Layout = resourceLayout,
-            Resources = [constantBuffer]
+            Resources = [viewConstantsBuffer, instanceBuffer]
         });
 
         InputLayout inputLayout = new();
@@ -131,6 +162,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         using Shader vertexShader = App.Context.LoadShaderFromSource(ShaderSource, "VSMain", ShaderStageFlags.Vertex);
         using Shader pixelShader = App.Context.LoadShaderFromSource(ShaderSource, "PSMain", ShaderStageFlags.Pixel);
 
+        // Create graphics pipeline
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
             RenderStates = new()
@@ -151,21 +183,47 @@ internal unsafe class SpinningCubeRenderer : IRenderer
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
+
+        InstanceData[] instances = new InstanceData[InstanceCount];
+        int index = 0;
+        int gridSize = (int)Math.Sqrt(InstanceCount);
+
+        for (int y = 0; y < gridSize; y++)
+        {
+            for (int x = 0; x < gridSize; x++)
+            {
+                float offsetX = (x - (gridSize / 2)) * 1.5f;
+                float offsetY = (y - (gridSize / 2)) * 1.5f;
+                float rotation = rotationAngle * (1.0f + (index * 0.1f));
+
+                instances[index] = new()
+                {
+                    Model = Matrix4x4.CreateScale(0.4f)
+                            * Matrix4x4.CreateRotationY(rotation)
+                            * Matrix4x4.CreateRotationX(rotation * 0.5f)
+                            * Matrix4x4.CreateTranslation(offsetX, offsetY, 0),
+                    Color = new((float)x / gridSize, (float)y / gridSize, 1.0f - ((float)x / gridSize), 1.0f)
+                };
+
+                index++;
+            }
+        }
+
+        instanceBuffer.Upload(instances, 0);
     }
 
     public void Render()
     {
-        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) * Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
-        Matrix4x4 view = Matrix4x4.CreateLookAt(new(0, 0, 3), Vector3.Zero, Vector3.UnitY);
+        Matrix4x4 view = Matrix4x4.CreateLookAt(new(0, 0, 8), Vector3.Zero, Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
 
-        constantBuffer.Upload([new MVPConstants() { Model = model, View = view, Projection = projection }], 0);
+        viewConstantsBuffer.Upload([new ViewConstants() { View = view, Projection = projection }], 0);
 
         CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
 
         commandBuffer.BeginRenderPass(App.SwapChain.FrameBuffer, new()
         {
-            ColorValues = [new(0.1f, 0.1f, 0.1f, 1.0f)],
+            ColorValues = [new(0.1f, 0.1f, 0.15f, 1.0f)],
             Depth = 1.0f,
             Stencil = 0,
             Flags = ClearFlags.All
@@ -175,7 +233,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         commandBuffer.SetResourceSet(resourceSet, 0);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
-        commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
+        commandBuffer.DrawIndexedIndirect(indirectBuffer, 0, 1);
 
         commandBuffer.EndRenderPass();
 
@@ -191,7 +249,9 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         pipeline.Dispose();
         resourceSet.Dispose();
         resourceLayout.Dispose();
-        constantBuffer.Dispose();
+        instanceBuffer.Dispose();
+        viewConstantsBuffer.Dispose();
+        indirectBuffer.Dispose();
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
@@ -209,13 +269,22 @@ file struct Vertex(Vector3 position, Vector4 color)
 }
 
 /// <summary>
-/// MVP transformation matrices.
+/// Per-instance transformation and color data.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-file struct MVPConstants
+file struct InstanceData
 {
     public Matrix4x4 Model;
 
+    public Vector4 Color;
+}
+
+/// <summary>
+/// View and projection matrices.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+file struct ViewConstants
+{
     public Matrix4x4 View;
 
     public Matrix4x4 Projection;
