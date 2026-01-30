@@ -11,6 +11,12 @@ internal static class App
 
     static App()
     {
+        // Ensure platform is supported
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+        {
+            throw new PlatformNotSupportedException("This tutorial only supports Windows, macOS, and Linux.");
+        }
+
         // Create window with no graphics API (we manage rendering ourselves)
         window = Window.Create(WindowOptions.Default with
         {
