@@ -26,7 +26,7 @@ internal static class App
         {
             Context = GraphicsContext.CreateDirectX12(useValidationLayer: true);
         }
-        else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+        else if (OperatingSystem.IsMacOS())
         {
             Context = GraphicsContext.CreateMetal(useValidationLayer: true);
         }
@@ -47,7 +47,7 @@ internal static class App
         {
             surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
         }
-        else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+        else if (OperatingSystem.IsMacOS())
         {
             surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
         }
