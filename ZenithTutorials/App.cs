@@ -58,8 +58,8 @@ internal static class App
         SwapChain = Context.CreateSwapChain(new()
         {
             Surface = surface,
-            ColorTargetFormat = PixelFormat.R8G8B8A8UNorm,
-            DepthStencilTargetFormat = PixelFormat.D24UNormS8UInt
+            ColorTargetFormat = PixelFormat.B8G8R8A8UNorm,
+            DepthStencilTargetFormat = PixelFormat.D32FloatS8UInt
         });
     }
 
