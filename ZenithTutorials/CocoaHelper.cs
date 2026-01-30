@@ -1,16 +1,14 @@
-﻿using System.Runtime.InteropServices;
-
-namespace ZenithTutorials;
+﻿namespace ZenithTutorials;
 
 internal static unsafe partial class CocoaHelper
 {
     private const string LibObjC = "/usr/lib/libobjc.A.dylib";
 
-    [LibraryImport(LibObjC, EntryPoint = "objc_getClass", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial nint GetClass(string name);
+    [LibraryImport(LibObjC, EntryPoint = "objc_getClass")]
+    private static partial nint GetClass([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
-    [LibraryImport(LibObjC, EntryPoint = "sel_registerName", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial nint Selector(string name);
+    [LibraryImport(LibObjC, EntryPoint = "sel_registerName")]
+    private static partial nint Selector([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
     private static partial nint Send(nint receiver, nint selector);
