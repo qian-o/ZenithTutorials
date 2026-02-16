@@ -50,7 +50,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
     private readonly Buffer indexBuffer;
     private readonly Buffer constantBuffer;
     private readonly ResourceLayout resourceLayout;
-    private readonly ResourceSet resourceSet;
+    private readonly ResourceTable resourceTable;
     private readonly GraphicsPipeline pipeline;
 
     private float rotationAngle;
@@ -118,7 +118,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             )
         });
 
-        resourceSet = App.Context.CreateResourceSet(new()
+        resourceTable = App.Context.CreateResourceTable(new()
         {
             Layout = resourceLayout,
             Resources = [constantBuffer]
@@ -141,7 +141,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             },
             Vertex = vertexShader,
             Pixel = pixelShader,
-            ResourceLayouts = [resourceLayout],
+            ResourceLayout = resourceLayout,
             InputLayouts = [inputLayout],
             PrimitiveTopology = PrimitiveTopology.TriangleList,
             Output = App.SwapChain.FrameBuffer.Output
@@ -169,10 +169,10 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             Depth = 1.0f,
             Stencil = 0,
             Flags = ClearFlags.All
-        }, resourceSet);
+        }, resourceTable);
 
         commandBuffer.SetPipeline(pipeline);
-        commandBuffer.SetResourceSet(resourceSet, 0);
+        commandBuffer.SetResourceTable(resourceTable);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
@@ -189,7 +189,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
     public void Dispose()
     {
         pipeline.Dispose();
-        resourceSet.Dispose();
+        resourceTable.Dispose();
         resourceLayout.Dispose();
         constantBuffer.Dispose();
         indexBuffer.Dispose();

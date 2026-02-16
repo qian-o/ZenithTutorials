@@ -64,7 +64,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     private readonly Buffer viewConstantsBuffer;
     private readonly Buffer instanceBuffer;
     private readonly ResourceLayout resourceLayout;
-    private readonly ResourceSet resourceSet;
+    private readonly ResourceTable resourceTable;
     private readonly GraphicsPipeline pipeline;
 
     private float rotationAngle;
@@ -117,6 +117,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             StrideInBytes = (uint)sizeof(IndirectDrawIndexedArgs),
             Flags = BufferUsageFlags.Indirect | BufferUsageFlags.MapWrite
         });
+
         indirectBuffer.Upload([new IndirectDrawIndexedArgs()
         {
             IndexCount = (uint)indices.Length,
@@ -149,7 +150,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             )
         });
 
-        resourceSet = App.Context.CreateResourceSet(new()
+        resourceTable = App.Context.CreateResourceTable(new()
         {
             Layout = resourceLayout,
             Resources = [viewConstantsBuffer, instanceBuffer]
@@ -173,7 +174,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             },
             Vertex = vertexShader,
             Pixel = pixelShader,
-            ResourceLayouts = [resourceLayout],
+            ResourceLayout = resourceLayout,
             InputLayouts = [inputLayout],
             PrimitiveTopology = PrimitiveTopology.TriangleList,
             Output = App.SwapChain.FrameBuffer.Output
@@ -227,10 +228,10 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             Depth = 1.0f,
             Stencil = 0,
             Flags = ClearFlags.All
-        }, resourceSet);
+        }, resourceTable);
 
         commandBuffer.SetPipeline(pipeline);
-        commandBuffer.SetResourceSet(resourceSet, 0);
+        commandBuffer.SetResourceTable(resourceTable);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.DrawIndexedIndirect(indirectBuffer, 0, 1);
@@ -247,7 +248,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     public void Dispose()
     {
         pipeline.Dispose();
-        resourceSet.Dispose();
+        resourceTable.Dispose();
         resourceLayout.Dispose();
         instanceBuffer.Dispose();
         viewConstantsBuffer.Dispose();
