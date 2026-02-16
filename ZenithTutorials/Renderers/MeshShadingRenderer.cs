@@ -2,6 +2,8 @@
 
 internal unsafe class MeshShadingRenderer : IRenderer
 {
+    private const uint MaxPrimitives = 126;
+
     private const string ShaderSource = """
         static const uint MaxVertices = 64;
         static const uint MaxPrimitives = 126;
@@ -238,7 +240,10 @@ internal unsafe class MeshShadingRenderer : IRenderer
             Pixel = pixelShader,
             ResourceLayout = resourceLayout,
             PrimitiveTopology = PrimitiveTopology.TriangleList,
-            Output = App.SwapChain.FrameBuffer.Output
+            Output = App.SwapChain.FrameBuffer.Output,
+            MeshThreadGroupSizeX = MaxPrimitives,
+            MeshThreadGroupSizeY = 1,
+            MeshThreadGroupSizeZ = 1
         });
     }
 
