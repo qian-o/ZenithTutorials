@@ -1,9 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Zenith.NET.DirectX12;
-using Zenith.NET.Metal;
-using Zenith.NET.Vulkan;
 
 namespace ZenithTutorials;
 
