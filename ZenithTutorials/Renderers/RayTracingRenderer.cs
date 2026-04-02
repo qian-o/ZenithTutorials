@@ -196,7 +196,76 @@ internal unsafe class RayTracingRenderer : IRenderer
                 float3 specular = LightColor * spec * shadow;
                 float3 ambient = sphereHitColor * AmbientColor;
 
-                color = ambient + diffuse + specular;
+                float3 directColor = ambient + diffuse + specular;
+
+                float3 reflectDir = reflect(rayDir, sphereHitNormal);
+                float3 reflectOrigin = hitPoint + sphereHitNormal * 0.001;
+
+                RayDesc reflectRay;
+                reflectRay.Origin = reflectOrigin;
+                reflectRay.Direction = reflectDir;
+                reflectRay.TMin = 0.001;
+                reflectRay.TMax = 1000.0;
+
+                float3 refSphereNormal = float3(0.0);
+                float3 refSphereColor = float3(0.0);
+
+                RayQuery<RAY_FLAG_NONE> refQuery;
+                refQuery.TraceRayInline(scene, RAY_FLAG_NONE, 0xFF, reflectRay);
+
+                while (refQuery.Proceed())
+                {
+                    if (refQuery.CandidateType() == CANDIDATE_PROCEDURAL_PRIMITIVE)
+                    {
+                        uint si = refQuery.CandidatePrimitiveIndex();
+                        Sphere s = spheres[si];
+
+                        float3 ro = refQuery.CandidateObjectRayOrigin();
+                        float3 rd = refQuery.CandidateObjectRayDirection();
+
+                        float t = IntersectSphere(ro, rd, s);
+
+                        if (t >= refQuery.RayTMin() && t <= refQuery.CommittedRayT())
+                        {
+                            float3 hp = ro + rd * t;
+                            refSphereNormal = normalize(hp - s.Center);
+                            refSphereColor = s.Color;
+                            refQuery.CommitProceduralPrimitiveHit(t);
+                        }
+                    }
+                }
+
+                float3 reflectColor;
+
+                if (refQuery.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+                {
+                    float3 rHit = reflectRay.Origin + reflectRay.Direction * refQuery.CommittedRayT();
+                    int cx = int(floor(rHit.x));
+                    int cz = int(floor(rHit.z));
+                    bool isW = ((cx + cz) & 1) == 0;
+                    float3 bc = isW ? float3(0.787, 0.787, 0.787) : float3(0.033, 0.033, 0.033);
+                    float nl = max(dot(float3(0.0, 1.0, 0.0), LightDir), 0.0);
+                    float3 so = rHit + float3(0.0, 1.0, 0.0) * 0.001;
+                    bool iS = TraceShadowRay(so, LightDir);
+                    float sh = iS ? 0.3 : 1.0;
+                    reflectColor = bc * AmbientColor + bc * LightColor * nl * sh;
+                }
+                else if (refQuery.CommittedStatus() == COMMITTED_PROCEDURAL_PRIMITIVE_HIT)
+                {
+                    float3 rHit = reflectRay.Origin + reflectRay.Direction * refQuery.CommittedRayT();
+                    float nl = max(dot(refSphereNormal, LightDir), 0.0);
+                    float3 so = rHit + refSphereNormal * 0.001;
+                    bool iS = TraceShadowRay(so, LightDir);
+                    float sh = iS ? 0.3 : 1.0;
+                    reflectColor = refSphereColor * AmbientColor + refSphereColor * LightColor * nl * sh;
+                }
+                else
+                {
+                    float rt = 0.5 * (reflectDir.y + 1.0);
+                    reflectColor = lerp(float3(1.0, 1.0, 1.0), float3(0.5, 0.7, 1.0), rt);
+                }
+
+                color = lerp(directColor, reflectColor, 0.3);
             }
             else
             {
