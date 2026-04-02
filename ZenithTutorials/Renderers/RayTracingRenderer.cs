@@ -32,11 +32,18 @@ internal unsafe class RayTracingRenderer : IRenderer
         ConstantBuffer<CameraConstants> camera;
 
         static const float RayEpsilon = 0.001;
+        static const float TwoPi = 6.2831853;
         static const uint SphereCount = 3;
+        static const uint ShadowSamples = 6;
+        static const uint ReflectionSamples = 4;
         static const float ShadowMin = 0.3;
+        static const float SunRadius = 0.04;
+        static const float SphereRoughness = 0.05;
+        static const float SphereF0 = 0.15;
         static const float FloorFadeStart = 8.0;
         static const float FloorFadeRange = 20.0;
 
+        static const float3 FloorNormal = float3(0.0, 1.0, 0.0);
         static const float3 LightDir = float3(0.6667, 0.6667, -0.3333);
         static const float3 LightColor = float3(1.0, 0.98, 0.95);
         static const float3 AmbientColor = float3(0.15, 0.15, 0.2);
@@ -44,8 +51,8 @@ internal unsafe class RayTracingRenderer : IRenderer
         float3 SampleSky(float3 direction)
         {
             float t = 0.5 * (direction.y + 1.0);
-            float3 horizon = float3(0.9, 0.85, 0.7);
-            float3 zenith = float3(0.4, 0.6, 1.0);
+            float3 horizon = float3(0.7, 0.85, 1.0);
+            float3 zenith = float3(0.3, 0.5, 1.0);
             float3 sky = lerp(horizon, zenith, saturate(t));
 
             float sunDot = dot(direction, LightDir);
@@ -67,16 +74,19 @@ internal unsafe class RayTracingRenderer : IRenderer
             return f0 + (1.0 - f0) * pow(1.0 - cosTheta, 5.0);
         }
 
-        float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection)
+        float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection, bool softShadow, out float shadow)
         {
-            int checkX = int(floor(hitPoint.x));
-            int checkZ = int(floor(hitPoint.z));
-            bool isWhite = ((checkX + checkZ) & 1) == 0;
-            float3 baseColor = isWhite ? float3(0.787, 0.787, 0.787) : float3(0.1, 0.1, 0.1);
+            float2 fw = max(abs(fwidth_approx(hitPoint.xz)), 0.001);
+            float2 fractPos = fract(hitPoint.xz) - 0.5;
+            float2 filtered = clamp(fractPos / fw, -0.5, 0.5);
+            float checker = 0.5 - 0.5 * filtered.x * filtered.y;
+            float3 baseColor = lerp(float3(0.787, 0.787, 0.787), float3(0.1, 0.1, 0.1), checker);
 
             float NdotL = max(dot(normal, LightDir), 0.0);
             float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-            float shadow = lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0));
+            shadow = softShadow
+                ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0))
+                : (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
 
             float3 litColor = baseColor * AmbientColor + baseColor * LightColor * NdotL * shadow;
 
@@ -97,7 +107,7 @@ internal unsafe class RayTracingRenderer : IRenderer
             return lerp(litColor, SampleSky(rayDirection), fade);
         }
 
-        float3 ShadeSphere(float3 hitPoint, float3 normal, float3 sphereColor, float3 viewDir)
+        float3 ShadeSphere(float3 hitPoint, float3 normal, float3 sphereColor, float3 viewDir, bool softShadow)
         {
             float NdotL = max(dot(normal, LightDir), 0.0);
 
@@ -105,7 +115,9 @@ internal unsafe class RayTracingRenderer : IRenderer
             float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
 
             float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-            float shadow = lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0));
+            float shadow = softShadow
+                ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0))
+                : (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
 
             float3 diffuse = sphereColor * LightColor * NdotL * shadow;
             float3 specular = LightColor * spec * shadow;
@@ -153,13 +165,14 @@ internal unsafe class RayTracingRenderer : IRenderer
             if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
             {
                 float3 hitPoint = reflectRay.Origin + reflectRay.Direction * query.CommittedRayT();
-                return ShadeCheckerboard(hitPoint, float3(0.0, 1.0, 0.0), reflectRay.Direction);
+                float unused;
+                return ShadeCheckerboard(hitPoint, FloorNormal, reflectRay.Direction, false, unused);
             }
             else if (query.CommittedStatus() == COMMITTED_PROCEDURAL_PRIMITIVE_HIT)
             {
                 float3 hitPoint = reflectRay.Origin + reflectRay.Direction * query.CommittedRayT();
                 float3 viewDir = normalize(origin - hitPoint);
-                return ShadeSphere(hitPoint, sphereNormal, sphereColor, viewDir);
+                return ShadeSphere(hitPoint, sphereNormal, sphereColor, viewDir, false);
             }
             else
             {
@@ -194,6 +207,13 @@ internal unsafe class RayTracingRenderer : IRenderer
             }
 
             return -1.0;
+        }
+
+        float2 fwidth_approx(float2 p)
+        {
+            float2 dx = float2(0.02, 0.0);
+            float2 dy = float2(0.0, 0.02);
+            return abs(fract(p + dx) - fract(p)) + abs(fract(p + dy) - fract(p));
         }
 
         float Hash(float2 p)
@@ -238,9 +258,6 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         float TraceSoftShadow(float3 origin, float3 direction, float2 pixelSeed)
         {
-            static const uint ShadowSamples = 6;
-            static const float SunRadius = 0.04;
-
             float3 tangent = normalize(cross(direction, float3(0.0, 1.0, 0.0)));
             float3 bitangent = cross(direction, tangent);
 
@@ -248,7 +265,7 @@ internal unsafe class RayTracingRenderer : IRenderer
             for (uint i = 0; i < ShadowSamples; i++)
             {
                 float h = Hash(pixelSeed + float2(float(i) * 7.13, float(i) * 3.71));
-                float angle = (float(i) + h) * (6.2831853 / float(ShadowSamples));
+                float angle = (float(i) + h) * (TwoPi / float(ShadowSamples));
                 float radius = sqrt(Hash(pixelSeed + float2(float(i) * 11.07, 0.0))) * SunRadius;
                 float3 jitteredDir = normalize(direction + tangent * cos(angle) * radius + bitangent * sin(angle) * radius);
 
@@ -259,6 +276,59 @@ internal unsafe class RayTracingRenderer : IRenderer
             }
 
             return lit / float(ShadowSamples);
+        }
+
+        float3 TraceRoughReflection(float3 origin, float3 reflectDir, float3 normal, float roughness, float2 pixelSeed)
+        {
+            float3 tangent = normalize(cross(reflectDir, normal));
+            float3 bitangent = cross(reflectDir, tangent);
+
+            float3 accum = float3(0.0);
+            for (uint i = 0; i < ReflectionSamples; i++)
+            {
+                float h1 = Hash(pixelSeed + float2(float(i) * 5.17, float(i) * 9.23));
+                float h2 = Hash(pixelSeed + float2(float(i) * 13.37, float(i) * 2.91));
+                float angle = h1 * TwoPi;
+                float radius = sqrt(h2) * roughness;
+                float3 jitteredDir = normalize(reflectDir + tangent * cos(angle) * radius + bitangent * sin(angle) * radius);
+                accum += TraceReflection(origin, jitteredDir);
+            }
+
+            return accum / float(ReflectionSamples);
+        }
+
+        float3 ShadeFloor(float3 hitPoint, float3 rayDir, float3 cameraPos)
+        {
+            float shadow;
+            float3 directColor = ShadeCheckerboard(hitPoint, FloorNormal, rayDir, true, shadow);
+
+            float3 viewDir = normalize(cameraPos - hitPoint);
+            float3 halfDir = normalize(LightDir + viewDir);
+            float floorSpec = pow(max(dot(FloorNormal, halfDir), 0.0), 128.0);
+            float specDist = length(hitPoint.xz);
+            float specFade = 1.0 - saturate((specDist - FloorFadeStart) / FloorFadeRange);
+            directColor += LightColor * floorSpec * 0.4 * specFade * shadow;
+
+            float3 reflectDir = reflect(rayDir, FloorNormal);
+            float3 reflectColor = TraceReflection(hitPoint + FloorNormal * RayEpsilon, reflectDir);
+            float fresnel = SchlickFresnel(max(dot(FloorNormal, viewDir), 0.0), 0.02);
+
+            return lerp(directColor, reflectColor, fresnel);
+        }
+
+        float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, float3 normal, float3 sphereColor)
+        {
+            float3 viewDir = normalize(cameraPos - hitPoint);
+
+            float3 directColor = ShadeSphere(hitPoint, normal, sphereColor, viewDir, true);
+
+            float3 reflectDir = reflect(rayDir, normal);
+            float3 reflectColor = TraceRoughReflection(
+                hitPoint + normal * RayEpsilon, reflectDir, normal,
+                SphereRoughness, hitPoint.xz * 100.0);
+            float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), SphereF0);
+
+            return lerp(directColor, reflectColor, fresnel);
         }
 
         [numthreads(16, 16, 1)]
@@ -332,37 +402,12 @@ internal unsafe class RayTracingRenderer : IRenderer
             if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
             {
                 float3 hitPoint = ray.Origin + ray.Direction * query.CommittedRayT();
-                float3 normal = float3(0.0, 1.0, 0.0);
-
-                float3 directColor = ShadeCheckerboard(hitPoint, normal, rayDir);
-
-                float3 viewDir = normalize(cameraPos - hitPoint);
-                float3 halfDir = normalize(LightDir + viewDir);
-                float floorSpec = pow(max(dot(normal, halfDir), 0.0), 128.0);
-                float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-                float specShadow = TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0);
-                float specDist = length(hitPoint.xz);
-                float specFade = 1.0 - saturate((specDist - FloorFadeStart) / FloorFadeRange);
-                directColor += LightColor * floorSpec * 0.4 * specFade * specShadow;
-
-                float3 reflectDir = reflect(rayDir, normal);
-                float3 reflectColor = TraceReflection(hitPoint + normal * RayEpsilon, reflectDir);
-                float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), 0.02);
-
-                color = lerp(directColor, reflectColor, fresnel);
+                color = ShadeFloor(hitPoint, rayDir, cameraPos);
             }
             else if (query.CommittedStatus() == COMMITTED_PROCEDURAL_PRIMITIVE_HIT)
             {
                 float3 hitPoint = ray.Origin + ray.Direction * query.CommittedRayT();
-                float3 viewDir = normalize(cameraPos - hitPoint);
-
-                float3 directColor = ShadeSphere(hitPoint, sphereHitNormal, sphereHitColor, viewDir);
-
-                float3 reflectDir = reflect(rayDir, sphereHitNormal);
-                float3 reflectColor = TraceReflection(hitPoint + sphereHitNormal * RayEpsilon, reflectDir);
-                float fresnel = SchlickFresnel(max(dot(sphereHitNormal, viewDir), 0.0), 0.04);
-
-                color = lerp(directColor, reflectColor, fresnel);
+                color = ShadePrimarySphere(hitPoint, rayDir, cameraPos, sphereHitNormal, sphereHitColor);
             }
             else
             {
