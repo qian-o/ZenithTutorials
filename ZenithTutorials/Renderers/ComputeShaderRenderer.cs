@@ -14,19 +14,17 @@ internal class ComputeShaderRenderer : IRenderer
             uint width, height;
             outputTexture.GetDimensions(width, height);
 
-            // Bounds check
             if (dispatchThreadID.x >= width || dispatchThreadID.y >= height)
             {
                 return;
             }
 
-            // Read input pixel
             float4 color = inputTexture[dispatchThreadID.xy];
 
-            // Convert to grayscale using luminance weights
-            float gray = dot(color.rgb, float3(0.299, 0.587, 0.114));
+            float3 linear = pow(color.rgb, 2.2);
+            float gray = dot(linear, float3(0.2126, 0.7152, 0.0722));
+            gray = pow(gray, 1.0 / 2.2);
 
-            // Write to output
             outputTexture[dispatchThreadID.xy] = float4(gray, gray, gray, color.a);
         }
         """;
@@ -103,14 +101,11 @@ internal class ComputeShaderRenderer : IRenderer
             processed = true;
         }
 
-        // Copy the processed texture to the swap chain's color target (centered)
         Texture colorTarget = App.FrameBuffer.Desc.ColorAttachments[0].Target;
 
-        // Clamp copy region to fit within both textures
         uint copyWidth = Math.Min(outputTexture.Desc.Width, App.Width);
         uint copyHeight = Math.Min(outputTexture.Desc.Height, App.Height);
 
-        // Center the copy region
         uint srcX = (outputTexture.Desc.Width - copyWidth) / 2;
         uint srcY = (outputTexture.Desc.Height - copyHeight) / 2;
         uint destX = (App.Width - copyWidth) / 2;

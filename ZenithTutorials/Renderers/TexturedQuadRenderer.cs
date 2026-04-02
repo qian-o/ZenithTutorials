@@ -45,7 +45,6 @@ internal unsafe class TexturedQuadRenderer : IRenderer
 
     public TexturedQuadRenderer()
     {
-        // UV origin (0,0) is top-left, (1,1) is bottom-right
         Vertex[] vertices =
         [
             new(new(-0.5f,  0.5f, 0.0f), new(0.0f, 0.0f)),
@@ -165,9 +164,6 @@ internal unsafe class TexturedQuadRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Vertex structure with position and texture coordinates.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector2 texCoord)
 {

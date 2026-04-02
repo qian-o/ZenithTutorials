@@ -22,7 +22,7 @@ internal unsafe class RayTracingRenderer : IRenderer
         StructuredBuffer<Sphere> spheres;
         RWTexture2D<float4> outputTexture;
 
-        static const float3 LightDir = normalize(float3(1.0, 1.0, -0.5));
+        static const float3 LightDir = float3(0.6667, 0.6667, -0.3333);
         static const float3 LightColor = float3(1.0, 0.98, 0.95);
         static const float3 AmbientColor = float3(0.1, 0.1, 0.15);
 
@@ -30,22 +30,21 @@ internal unsafe class RayTracingRenderer : IRenderer
         {
             float3 oc = origin - sphere.Center;
 
-            float a = dot(direction, direction);
             float b = dot(oc, direction);
             float c = dot(oc, oc) - sphere.Radius * sphere.Radius;
-            float discriminant = b * b - a * c;
+            float discriminant = b * b - c;
 
             if (discriminant > 0.0)
             {
                 float sqrtD = sqrt(discriminant);
-                float t1 = (-b - sqrtD) / a;
+                float t1 = -b - sqrtD;
 
                 if (t1 > 0.0)
                 {
                     return t1;
                 }
 
-                float t2 = (-b + sqrtD) / a;
+                float t2 = -b + sqrtD;
 
                 if (t2 > 0.0)
                 {
@@ -161,11 +160,11 @@ internal unsafe class RayTracingRenderer : IRenderer
             {
                 float3 hitPoint = ray.Origin + ray.Direction * query.CommittedRayT();
 
-                float scale = 1.0;
-                int checkX = int(floor(hitPoint.x * scale));
-                int checkZ = int(floor(hitPoint.z * scale));
+                int checkX = int(floor(hitPoint.x));
+                int checkZ = int(floor(hitPoint.z));
                 bool isWhite = ((checkX + checkZ) & 1) == 0;
-                float3 baseColor = isWhite ? float3(0.9, 0.9, 0.9) : float3(0.2, 0.2, 0.2);
+
+                float3 baseColor = isWhite ? float3(0.787, 0.787, 0.787) : float3(0.033, 0.033, 0.033);
 
                 float3 normal = float3(0.0, 1.0, 0.0);
                 float NdotL = max(dot(normal, LightDir), 0.0);
@@ -185,14 +184,19 @@ internal unsafe class RayTracingRenderer : IRenderer
 
                 float NdotL = max(dot(sphereHitNormal, LightDir), 0.0);
 
+                float3 viewDir = normalize(cameraPos - hitPoint);
+                float3 halfDir = normalize(LightDir + viewDir);
+                float spec = pow(max(dot(sphereHitNormal, halfDir), 0.0), 64.0);
+
                 float3 shadowOrigin = hitPoint + sphereHitNormal * 0.001;
                 bool inShadow = TraceShadowRay(shadowOrigin, LightDir);
 
                 float shadow = inShadow ? 0.3 : 1.0;
                 float3 diffuse = sphereHitColor * LightColor * NdotL * shadow;
+                float3 specular = LightColor * spec * shadow;
                 float3 ambient = sphereHitColor * AmbientColor;
 
-                color = ambient + diffuse;
+                color = ambient + diffuse + specular;
             }
             else
             {
@@ -446,9 +450,6 @@ internal unsafe class RayTracingRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Sphere definition for procedural geometry.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 32)]
 file struct Sphere
 {

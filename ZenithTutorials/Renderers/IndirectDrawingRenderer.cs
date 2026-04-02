@@ -2,7 +2,7 @@
 
 internal unsafe class IndirectDrawingRenderer : IRenderer
 {
-    private const int InstanceCount = 25;  // 5x5 grid of cubes
+    private const int InstanceCount = 25;
 
     private const string ShaderSource = """
         struct ViewConstants
@@ -73,12 +73,10 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     {
         Vertex[] vertices =
         [
-            // Front face
             new(new(-0.5f, -0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f, -0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new(-0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
-            // Back face
             new(new(-0.5f, -0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f, -0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f,  0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
@@ -133,7 +131,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             StrideInBytes = (uint)sizeof(ViewConstants),
             Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
         });
-        Resize(App.Width, App.Height); // Initialize view constants
+        Resize(App.Width, App.Height);
 
         instanceBuffer = App.Context.CreateBuffer(new()
         {
@@ -164,7 +162,6 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         using Shader vertexShader = App.Context.LoadShaderFromSource(ShaderSource, "VSMain", ShaderStageFlags.Vertex);
         using Shader pixelShader = App.Context.LoadShaderFromSource(ShaderSource, "PSMain", ShaderStageFlags.Pixel);
 
-        // Create graphics pipeline
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
             RenderStates = new()
@@ -187,6 +184,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         rotationAngle += (float)deltaTime;
 
         InstanceData[] instances = new InstanceData[InstanceCount];
+
         int index = 0;
         int gridSize = (int)Math.Sqrt(InstanceCount);
 
@@ -258,9 +256,6 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Vertex structure with position and color data.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -269,9 +264,6 @@ file struct Vertex(Vector3 position, Vector4 color)
     public Vector4 Color = color;
 }
 
-/// <summary>
-/// Per-instance transformation and color data.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 80)]
 file struct InstanceData
 {
@@ -282,9 +274,6 @@ file struct InstanceData
     public Vector4 Color;
 }
 
-/// <summary>
-/// View and projection matrices.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 128)]
 file struct ViewConstants
 {

@@ -59,12 +59,10 @@ internal unsafe class SpinningCubeRenderer : IRenderer
     {
         Vertex[] vertices =
         [
-            // Front face
             new(new(-0.5f, -0.5f,  0.5f), new(1.0f, 0.0f, 0.0f, 1.0f)),
             new(new( 0.5f, -0.5f,  0.5f), new(0.0f, 1.0f, 0.0f, 1.0f)),
             new(new( 0.5f,  0.5f,  0.5f), new(0.0f, 0.0f, 1.0f, 1.0f)),
             new(new(-0.5f,  0.5f,  0.5f), new(1.0f, 1.0f, 0.0f, 1.0f)),
-            // Back face
             new(new(-0.5f, -0.5f, -0.5f), new(1.0f, 0.0f, 1.0f, 1.0f)),
             new(new( 0.5f, -0.5f, -0.5f), new(0.0f, 1.0f, 1.0f, 1.0f)),
             new(new( 0.5f,  0.5f, -0.5f), new(1.0f, 1.0f, 1.0f, 1.0f)),
@@ -73,17 +71,11 @@ internal unsafe class SpinningCubeRenderer : IRenderer
 
         uint[] indices =
         [
-            // Front
             0, 1, 2, 0, 2, 3,
-            // Back
             5, 4, 7, 5, 7, 6,
-            // Left
             4, 0, 3, 4, 3, 7,
-            // Right
             1, 5, 6, 1, 6, 2,
-            // Top
             3, 2, 6, 3, 6, 7,
-            // Bottom
             4, 5, 1, 4, 1, 0
         ];
 
@@ -197,9 +189,6 @@ internal unsafe class SpinningCubeRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Vertex structure with position and color data.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -208,9 +197,6 @@ file struct Vertex(Vector3 position, Vector4 color)
     public Vector4 Color = color;
 }
 
-/// <summary>
-/// MVP transformation matrices.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 192)]
 file struct MVPConstants
 {

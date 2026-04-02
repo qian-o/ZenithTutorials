@@ -2,11 +2,11 @@
 
 internal unsafe class MeshShadingRenderer : IRenderer
 {
-    private const uint MaxPrimitives = 126;
+    private const uint MaxPrimitives = 128;
 
     private const string ShaderSource = """
         static const uint MaxVertices = 64;
-        static const uint MaxPrimitives = 126;
+        static const uint MaxPrimitives = 128;
 
         struct Vertex
         {
@@ -95,18 +95,21 @@ internal unsafe class MeshShadingRenderer : IRenderer
         [shader("pixel")]
         float4 PSMain(VertexOutput input) : SV_Target
         {
-            // Simple directional lighting
             float3 lightDir = normalize(float3(1.0, 1.0, -1.0));
-            float ndotl = max(dot(normalize(input.Normal), lightDir), 0.0);
+            float3 normal = normalize(input.Normal);
+            float ndotl = max(dot(normal, lightDir), 0.0);
 
-            // Base color from texture coordinates
+            float3 viewDir = normalize(-input.Position.xyz);
+            float3 halfDir = normalize(lightDir + viewDir);
+            float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+
             float3 baseColor = float3(input.TexCoord, 0.5);
 
-            // Ambient + diffuse lighting
             float3 ambient = baseColor * 0.2;
             float3 diffuse = baseColor * ndotl * 0.8;
+            float3 specular = float3(1.0, 1.0, 1.0) * spec * 0.5;
 
-            return float4(ambient + diffuse, 1.0);
+            return float4(ambient + diffuse + specular, 1.0);
         }
         """;
 
@@ -130,37 +133,31 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
         Vertex[] cubeVertices =
         [
-            // Front face
             new() { Position = new(-0.5f, -0.5f,  0.5f), Normal = new( 0,  0,  1), TexCoord = new(0, 1) },
             new() { Position = new( 0.5f, -0.5f,  0.5f), Normal = new( 0,  0,  1), TexCoord = new(1, 1) },
             new() { Position = new( 0.5f,  0.5f,  0.5f), Normal = new( 0,  0,  1), TexCoord = new(1, 0) },
             new() { Position = new(-0.5f,  0.5f,  0.5f), Normal = new( 0,  0,  1), TexCoord = new(0, 0) },
 
-            // Back face
             new() { Position = new( 0.5f, -0.5f, -0.5f), Normal = new( 0,  0, -1), TexCoord = new(0, 1) },
             new() { Position = new(-0.5f, -0.5f, -0.5f), Normal = new( 0,  0, -1), TexCoord = new(1, 1) },
             new() { Position = new(-0.5f,  0.5f, -0.5f), Normal = new( 0,  0, -1), TexCoord = new(1, 0) },
             new() { Position = new( 0.5f,  0.5f, -0.5f), Normal = new( 0,  0, -1), TexCoord = new(0, 0) },
 
-            // Left face
             new() { Position = new(-0.5f, -0.5f, -0.5f), Normal = new(-1,  0,  0), TexCoord = new(0, 1) },
             new() { Position = new(-0.5f, -0.5f,  0.5f), Normal = new(-1,  0,  0), TexCoord = new(1, 1) },
             new() { Position = new(-0.5f,  0.5f,  0.5f), Normal = new(-1,  0,  0), TexCoord = new(1, 0) },
             new() { Position = new(-0.5f,  0.5f, -0.5f), Normal = new(-1,  0,  0), TexCoord = new(0, 0) },
 
-            // Right face
             new() { Position = new( 0.5f, -0.5f,  0.5f), Normal = new( 1,  0,  0), TexCoord = new(0, 1) },
             new() { Position = new( 0.5f, -0.5f, -0.5f), Normal = new( 1,  0,  0), TexCoord = new(1, 1) },
             new() { Position = new( 0.5f,  0.5f, -0.5f), Normal = new( 1,  0,  0), TexCoord = new(1, 0) },
             new() { Position = new( 0.5f,  0.5f,  0.5f), Normal = new( 1,  0,  0), TexCoord = new(0, 0) },
 
-            // Top face
             new() { Position = new(-0.5f,  0.5f,  0.5f), Normal = new( 0,  1,  0), TexCoord = new(0, 1) },
             new() { Position = new( 0.5f,  0.5f,  0.5f), Normal = new( 0,  1,  0), TexCoord = new(1, 1) },
             new() { Position = new( 0.5f,  0.5f, -0.5f), Normal = new( 0,  1,  0), TexCoord = new(1, 0) },
             new() { Position = new(-0.5f,  0.5f, -0.5f), Normal = new( 0,  1,  0), TexCoord = new(0, 0) },
 
-            // Bottom face
             new() { Position = new(-0.5f, -0.5f, -0.5f), Normal = new( 0, -1,  0), TexCoord = new(0, 1) },
             new() { Position = new( 0.5f, -0.5f, -0.5f), Normal = new( 0, -1,  0), TexCoord = new(1, 1) },
             new() { Position = new( 0.5f, -0.5f,  0.5f), Normal = new( 0, -1,  0), TexCoord = new(1, 0) },
@@ -169,22 +166,16 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
         Triangle[] cubeTriangles =
         [
-            // Front face
             new() { I0 = 0, I1 = 1, I2 = 2 },
             new() { I0 = 0, I1 = 2, I2 = 3 },
-            // Back face
             new() { I0 = 4, I1 = 5, I2 = 6 },
             new() { I0 = 4, I1 = 6, I2 = 7 },
-            // Left face
             new() { I0 = 8, I1 = 9, I2 = 10 },
             new() { I0 = 8, I1 = 10, I2 = 11 },
-            // Right face
             new() { I0 = 12, I1 = 13, I2 = 14 },
             new() { I0 = 12, I1 = 14, I2 = 15 },
-            // Top face
             new() { I0 = 16, I1 = 17, I2 = 18 },
             new() { I0 = 16, I1 = 18, I2 = 19 },
-            // Bottom face
             new() { I0 = 20, I1 = 21, I2 = 22 },
             new() { I0 = 20, I1 = 22, I2 = 23 }
         ];
@@ -201,7 +192,6 @@ internal unsafe class MeshShadingRenderer : IRenderer
         ];
         meshletCount = (uint)meshlets.Length;
 
-        // Create vertex buffer
         vertexBuffer = App.Context.CreateBuffer(new()
         {
             SizeInBytes = (uint)(sizeof(Vertex) * cubeVertices.Length),
@@ -210,7 +200,6 @@ internal unsafe class MeshShadingRenderer : IRenderer
         });
         vertexBuffer.Upload(cubeVertices, 0);
 
-        // Create index buffer (Triangle struct per triangle)
         indexBuffer = App.Context.CreateBuffer(new()
         {
             SizeInBytes = (uint)(sizeof(Triangle) * cubeTriangles.Length),
@@ -322,9 +311,6 @@ internal unsafe class MeshShadingRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Vertex structure with position and normal.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 48)]
 file struct Vertex
 {
@@ -338,9 +324,6 @@ file struct Vertex
     public Vector2 TexCoord;
 }
 
-/// <summary>
-/// Triangle indices for mesh shading.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 16)]
 file struct Triangle
 {
@@ -354,9 +337,6 @@ file struct Triangle
     public uint I2;
 }
 
-/// <summary>
-/// Meshlet structure defining a chunk of geometry.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 16)]
 file struct Meshlet
 {
@@ -373,9 +353,6 @@ file struct Meshlet
     public uint PrimitiveCount;
 }
 
-/// <summary>
-/// Transform constants for the mesh.
-/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 64)]
 file struct TransformConstants
 {

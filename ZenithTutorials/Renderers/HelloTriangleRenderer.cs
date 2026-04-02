@@ -37,12 +37,11 @@ internal unsafe class HelloTriangleRenderer : IRenderer
 
     public HelloTriangleRenderer()
     {
-        // Define triangle vertices (NDC coordinates: -1 to 1)
         Vertex[] vertices =
         [
-            new(new( 0.0f,  0.5f, 0.0f), new(1.0f, 0.0f, 0.0f, 1.0f)), // Top    - Red
-            new(new( 0.5f, -0.5f, 0.0f), new(0.0f, 1.0f, 0.0f, 1.0f)), // Right  - Green
-            new(new(-0.5f, -0.5f, 0.0f), new(0.0f, 0.0f, 1.0f, 1.0f)), // Left   - Blue
+            new(new( 0.0f,  0.5f, 0.0f), new(1.0f, 0.0f, 0.0f, 1.0f)),
+            new(new( 0.5f, -0.5f, 0.0f), new(0.0f, 1.0f, 0.0f, 1.0f)),
+            new(new(-0.5f, -0.5f, 0.0f), new(0.0f, 0.0f, 1.0f, 1.0f)),
         ];
 
         vertexBuffer = App.Context.CreateBuffer(new()
@@ -53,7 +52,6 @@ internal unsafe class HelloTriangleRenderer : IRenderer
         });
         vertexBuffer.Upload(vertices, 0);
 
-        // Define vertex input layout (must match shader VSInput)
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
@@ -65,9 +63,9 @@ internal unsafe class HelloTriangleRenderer : IRenderer
         {
             RenderStates = new()
             {
-                RasterizerState = RasterizerStates.CullNone,     // Disable back-face culling
-                DepthStencilState = DepthStencilStates.Default,  // Enable depth testing
-                BlendState = BlendStates.Opaque                  // No alpha blending
+                RasterizerState = RasterizerStates.CullNone,
+                DepthStencilState = DepthStencilStates.Default,
+                BlendState = BlendStates.Opaque
             },
             Vertex = vertexShader,
             Pixel = pixelShader,
@@ -114,9 +112,6 @@ internal unsafe class HelloTriangleRenderer : IRenderer
     }
 }
 
-/// <summary>
-/// Vertex structure with position and color data.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
