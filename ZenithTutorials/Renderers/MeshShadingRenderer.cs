@@ -25,16 +25,31 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
             private float4 NormalAndPadding;
 
-            property float3 Position { get { return PositionAndPadding.xyz; } }
+            property float3 Position
+            {
+                get {
+                    return PositionAndPadding.xyz;
+                }
+            }
 
-            property float3 Normal { get { return NormalAndPadding.xyz; } }
+            property float3 Normal
+            {
+                get {
+                    return NormalAndPadding.xyz;
+                }
+            }
         };
 
         struct Triangle
         {
             private uint4 IndicesAndPadding;
 
-            property uint3 Indices { get { return IndicesAndPadding.xyz; } }
+            property uint3 Indices
+            {
+                get {
+                    return IndicesAndPadding.xyz;
+                }
+            }
         };
 
         struct SceneConstants
@@ -105,7 +120,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
         [shader("amplification")]
         [numthreads(ASGroupSize, 1, 1)]
-        void ASMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID)
+        void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
         {
             uint instanceIndex = groupID * ASGroupSize + groupThreadID;
 
@@ -138,11 +153,8 @@ internal unsafe class MeshShadingRenderer : IRenderer
         [shader("mesh")]
         [numthreads(120, 1, 1)]
         [outputtopology("triangle")]
-        void MSMain(uint groupID : SV_GroupID,
-                    uint groupThreadID : SV_GroupThreadID,
-                    in payload Payload meshPayload,
-                    OutputVertices<VertexOutput, 62> outVertices,
-                    OutputIndices<uint3, 120> outIndices)
+        void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in payload Payload meshPayload,
+                    OutputVertices<VertexOutput, 62> outVertices, OutputIndices<uint3, 120> outIndices)
         {
             uint instanceIndex = meshPayload.InstanceIndices[groupID];
             float3 instancePos = InstancePosition(instanceIndex);

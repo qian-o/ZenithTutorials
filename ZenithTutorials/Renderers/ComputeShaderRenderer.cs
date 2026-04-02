@@ -9,7 +9,7 @@ internal class ComputeShaderRenderer : IRenderer
         RWTexture2D outputTexture;
 
         [numthreads(16, 16, 1)]
-        void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
+        void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
         {
             uint width, height;
             outputTexture.GetDimensions(width, height);

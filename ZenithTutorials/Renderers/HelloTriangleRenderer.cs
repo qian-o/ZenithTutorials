@@ -7,14 +7,14 @@ internal unsafe class HelloTriangleRenderer : IRenderer
         {
             float3 Position : POSITION0;
 
-            float4 Color    : COLOR0;
+            float4 Color : COLOR0;
         };
 
         struct PSInput
         {
             float4 Position : SV_POSITION;
 
-            float4 Color    : COLOR0;
+            float4 Color : COLOR0;
         };
 
         PSInput VSMain(VSInput input)

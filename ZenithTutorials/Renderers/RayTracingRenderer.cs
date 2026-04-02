@@ -28,18 +28,38 @@ internal unsafe class RayTracingRenderer : IRenderer
 
             private float4 ColorAndPadding;
 
-            property float3 Center { get { return CenterAndRadius.xyz; } }
+            property float3 Center
+            {
+                get {
+                    return CenterAndRadius.xyz;
+                }
+            }
 
-            property float Radius { get { return CenterAndRadius.w; } }
+            property float Radius
+            {
+                get {
+                    return CenterAndRadius.w;
+                }
+            }
 
-            property float3 Color { get { return ColorAndPadding.xyz; } }
+            property float3 Color
+            {
+                get {
+                    return ColorAndPadding.xyz;
+                }
+            }
         };
 
         struct CameraConstants
         {
             private float4 PositionAndPadding;
 
-            property float3 Position { get { return PositionAndPadding.xyz; } }
+            property float3 Position
+            {
+                get {
+                    return PositionAndPadding.xyz;
+                }
+            }
         };
 
         RaytracingAccelerationStructure scene;
@@ -83,9 +103,8 @@ internal unsafe class RayTracingRenderer : IRenderer
 
             float NdotL = max(dot(normal, LightDir), 0.0);
             float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-            shadow = softShadow
-                ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0))
-                : (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
+            shadow = softShadow ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0)) :
+                                  (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
 
             float3 litColor = baseColor * AmbientColor + baseColor * LightColor * NdotL * shadow;
 
@@ -115,9 +134,8 @@ internal unsafe class RayTracingRenderer : IRenderer
             float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
 
             float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-            float shadow = softShadow
-                ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0))
-                : (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
+            float shadow = softShadow ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0)) :
+                                        (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
 
             float3 diffuse = sphereColor * LightColor * NdotL * shadow;
             float3 specular = LightColor * spec * shadow;
@@ -323,16 +341,14 @@ internal unsafe class RayTracingRenderer : IRenderer
             float3 directColor = ShadeSphere(hitPoint, normal, sphereColor, viewDir, true);
 
             float3 reflectDir = reflect(rayDir, normal);
-            float3 reflectColor = TraceRoughReflection(
-                hitPoint + normal * RayEpsilon, reflectDir, normal,
-                SphereRoughness, hitPoint.xz * 100.0);
+            float3 reflectColor = TraceRoughReflection(hitPoint + normal * RayEpsilon, reflectDir, normal, SphereRoughness, hitPoint.xz * 100.0);
             float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), SphereF0);
 
             return lerp(directColor, reflectColor, fresnel);
         }
 
         [numthreads(16, 16, 1)]
-        void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
+        void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
         {
             uint2 pixelCoord = dispatchThreadID.xy;
 

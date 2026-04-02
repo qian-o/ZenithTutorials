@@ -32,7 +32,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         {
             float4 worldPos = mul(float4(input.Position, 1.0), mvp.Model);
             float4 viewPos = mul(worldPos, mvp.View);
-        
+
             PSInput output;
             output.Position = mul(viewPos, mvp.Projection);
             output.Color = input.Color;

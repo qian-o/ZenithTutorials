@@ -1,6 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-App.Run<MeshShadingRenderer>();
+App.Run<RayTracingRenderer>();
 
 App.Cleanup();
