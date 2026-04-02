@@ -1,6 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-App.Run<SpinningCubeRenderer>();
+App.Run<ComputeShaderRenderer>();
 
 App.Cleanup();
