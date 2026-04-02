@@ -216,6 +216,7 @@ internal unsafe class RayTracingRenderer : IRenderer
     private readonly TopLevelAccelerationStructure tlas;
     private readonly ResourceLayout resourceLayout;
     private readonly ComputePipeline pipeline;
+
     private Texture? outputTexture;
     private ResourceTable? resourceTable;
 
