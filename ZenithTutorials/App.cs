@@ -35,7 +35,7 @@ internal static class App
         window = Window.Create(WindowOptions.Default with
         {
             API = GraphicsAPI.None,
-            Title = "Tutorial - Zenith.NET",
+            Title = "Zenith Tutorials",
             Size = new(1280, 720)
         });
         window.Initialize();
