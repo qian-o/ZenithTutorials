@@ -74,7 +74,7 @@ internal unsafe class HelloTriangleRenderer : IRenderer
             ResourceLayout = null,
             InputLayouts = [inputLayout],
             PrimitiveTopology = PrimitiveTopology.TriangleList,
-            Output = App.SwapChain.FrameBuffer.Output
+            Output = App.FrameBuffer.Output
         });
     }
 
@@ -86,7 +86,7 @@ internal unsafe class HelloTriangleRenderer : IRenderer
     {
         CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
 
-        commandBuffer.BeginRenderPass(App.SwapChain.FrameBuffer, new()
+        commandBuffer.BeginRenderPass(App.FrameBuffer, new()
         {
             ColorValues = [new(0.1f, 0.1f, 0.1f, 1.0f)],
             Depth = 1.0f,

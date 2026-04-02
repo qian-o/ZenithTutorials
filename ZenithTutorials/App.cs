@@ -8,97 +8,98 @@ namespace ZenithTutorials;
 internal static class App
 {
     private static readonly IWindow window;
+    private static readonly SwapChain swapChain;
 
     static App()
     {
-        // Ensure platform is supported
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
         {
-            throw new PlatformNotSupportedException("This tutorial only supports Windows, Linux, and macOS.");
+            throw new PlatformNotSupportedException("This application only supports Windows, macOS, and Linux.");
         }
 
-        // Create window with no graphics API (we manage rendering ourselves)
-        window = Window.Create(WindowOptions.Default with
-        {
-            API = GraphicsAPI.None,
-            Title = "Zenith.NET Tutorial",
-            Size = new(1280, 720)
-        });
-
-        window.Initialize();
-
-        // Create graphics context and surface based on platform
-        Surface surface;
         if (OperatingSystem.IsWindows())
         {
             Context = GraphicsContext.CreateDirectX12(useValidationLayer: true);
-
-            surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
         }
-        else if (OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsMacOS())
         {
-            Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
-
-            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
+            Context = GraphicsContext.CreateMetal(useValidationLayer: true);
         }
         else
         {
-            Context = GraphicsContext.CreateMetal(useValidationLayer: true);
-
-            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
+            Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
         }
 
-        // Log validation messages for debugging
-        Context.ValidationMessage += (sender, args) =>
-        {
-            Console.WriteLine($"[{args.Source} - {args.Severity}] {args.Message}");
-        };
+        Context.ValidationMessage += static (sender, args) => Console.WriteLine($"[{args.Source} - {args.Severity}] {args.Message}");
 
-        // Create swap chain for double-buffered rendering
-        SwapChain = Context.CreateSwapChain(new()
+        window = Window.Create(WindowOptions.Default with
         {
-            Surface = surface,
-            ColorTargetFormat = PixelFormat.B8G8R8A8UNorm,
-            DepthStencilTargetFormat = PixelFormat.D32FloatS8UInt
+            API = GraphicsAPI.None,
+            Title = "Tutorial - Zenith.NET",
+            Size = new(1280, 720)
         });
+        window.Initialize();
+        window.Center();
+
+        Surface surface;
+        if (OperatingSystem.IsWindows())
+        {
+            surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
+        }
+        else
+        {
+            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
+        }
+
+        swapChain = Context.CreateSwapChain(new() { Surface = surface, ColorTargetFormat = PixelFormat.B8G8R8A8UNorm, DepthStencilTargetFormat = PixelFormat.D32FloatS8UInt });
     }
 
     public static GraphicsContext Context { get; }
 
-    public static SwapChain SwapChain { get; }
+    public static uint Width => (uint)window.FramebufferSize.X;
 
-    public static uint Width => (uint)window.Size.X;
+    public static uint Height => (uint)window.FramebufferSize.Y;
 
-    public static uint Height => (uint)window.Size.Y;
+    public static FrameBuffer FrameBuffer => swapChain.FrameBuffer;
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
         using TRenderer renderer = new();
 
-        window.Update += renderer.Update;
+        window.Update += delta =>
+        {
+            if (Width is 0 || Height is 0)
+            {
+                return;
+            }
+
+            renderer.Update(delta);
+        };
 
         window.Render += delta =>
         {
-            // Skip rendering when window is minimized
-            if (Width <= 0 || Height <= 0)
+            if (Width is 0 || Height is 0)
             {
                 return;
             }
 
             renderer.Render();
-            SwapChain.Present();
+            swapChain.Present();
         };
 
         window.Resize += size =>
         {
-            if (Width <= 0 || Height <= 0)
+            if (Width is 0 || Height is 0)
             {
                 return;
             }
 
-            // Notify renderer first, then resize swap chain
             renderer.Resize(Width, Height);
-            SwapChain.Resize(Width, Height);
+            swapChain.Resize(Width, Height);
         };
 
         window.Run();
@@ -106,8 +107,9 @@ internal static class App
 
     public static void Cleanup()
     {
-        SwapChain.Dispose();
-        Context.Dispose();
+        swapChain.Dispose();
         window.Dispose();
+
+        Context.Dispose();
     }
 }
