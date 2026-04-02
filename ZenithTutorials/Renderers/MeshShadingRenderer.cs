@@ -50,11 +50,11 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
         struct VertexOutput
         {
-            float4 Position : SV_Position;
+            float4 Position : SV_POSITION;
 
-            float3 WorldNormal : NORMAL;
+            float3 WorldNormal : NORMAL0;
 
-            float3 Color : COLOR;
+            float3 Color : COLOR0;
         };
 
         struct Payload
@@ -93,7 +93,9 @@ internal unsafe class MeshShadingRenderer : IRenderer
             {
                 float4 plane = scene.FrustumPlanes[i];
                 if (dot(plane.xyz, center) + plane.w < -radius)
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -115,7 +117,10 @@ internal unsafe class MeshShadingRenderer : IRenderer
             }
 
             if (groupThreadID == 0)
+            {
                 s_visibleCount = 0;
+            }
+
             GroupMemoryBarrierWithGroupSync();
 
             if (visible)
@@ -124,6 +129,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
                 InterlockedAdd(s_visibleCount, 1, offset);
                 s_payload.InstanceIndices[offset] = instanceIndex;
             }
+
             GroupMemoryBarrierWithGroupSync();
 
             DispatchMesh(s_visibleCount, 1, 1, s_payload);
@@ -164,7 +170,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         }
 
         [shader("pixel")]
-        float4 PSMain(VertexOutput input) : SV_Target
+        float4 PSMain(VertexOutput input) : SV_TARGET
         {
             float3 lightDir = normalize(scene.LightDirection);
             float3 normal = normalize(input.WorldNormal);
@@ -212,6 +218,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
             {
                 float theta = 2.0f * MathF.PI * lon / lonSegments;
                 Vector3 normal = new(sinPhi * MathF.Cos(theta), cosPhi, sinPhi * MathF.Sin(theta));
+
                 sphereVertices.Add(new() { Position = normal * radius, Normal = normal });
             }
         }
@@ -221,6 +228,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         for (int lon = 0; lon < lonSegments; lon++)
         {
             uint next = (uint)((lon + 1) % lonSegments);
+
             sphereTriangles.Add(new() { I0 = 0, I1 = (uint)(1 + lon), I2 = 1 + next });
         }
 
@@ -233,16 +241,19 @@ internal unsafe class MeshShadingRenderer : IRenderer
                 uint tr = (uint)(1 + lat * lonSegments) + next;
                 uint bl = (uint)(1 + (lat + 1) * lonSegments + lon);
                 uint br = (uint)(1 + (lat + 1) * lonSegments) + next;
+
                 sphereTriangles.Add(new() { I0 = tl, I1 = bl, I2 = tr });
                 sphereTriangles.Add(new() { I0 = tr, I1 = bl, I2 = br });
             }
         }
 
         uint bottomPole = (uint)(sphereVertices.Count - 1);
-        uint lastRing = (uint)(1 + (latSegments - 2) * lonSegments);
+        uint lastRing = 1 + (latSegments - 2) * lonSegments;
+
         for (int lon = 0; lon < lonSegments; lon++)
         {
             uint next = (uint)((lon + 1) % lonSegments);
+
             sphereTriangles.Add(new() { I0 = bottomPole, I1 = lastRing + next, I2 = lastRing + (uint)lon });
         }
 
@@ -320,29 +331,28 @@ internal unsafe class MeshShadingRenderer : IRenderer
         totalTime += (float)deltaTime;
 
         float angle = totalTime * 0.3f;
-        Vector3 cameraPos = new(
-            35.0f * MathF.Sin(angle),
-            20.0f * MathF.Sin(totalTime * 0.2f),
-            35.0f * MathF.Cos(angle)
-        );
+
+        Vector3 cameraPos = new(35.0f * MathF.Sin(angle), 20.0f * MathF.Sin(totalTime * 0.2f), 35.0f * MathF.Cos(angle));
 
         Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPos, Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(
-            float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 200.0f);
+        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 200.0f);
         Matrix4x4 vp = view * projection;
 
-        constantBuffer.Upload([new SceneConstants
+        SceneConstants sc = new()
         {
             ViewProjection = vp,
-            FrustumPlane0 = NormalizePlane(new(vp.M11 + vp.M14, vp.M21 + vp.M24, vp.M31 + vp.M34, vp.M41 + vp.M44)),
-            FrustumPlane1 = NormalizePlane(new(vp.M14 - vp.M11, vp.M24 - vp.M21, vp.M34 - vp.M31, vp.M44 - vp.M41)),
-            FrustumPlane2 = NormalizePlane(new(vp.M12 + vp.M14, vp.M22 + vp.M24, vp.M32 + vp.M34, vp.M42 + vp.M44)),
-            FrustumPlane3 = NormalizePlane(new(vp.M14 - vp.M12, vp.M24 - vp.M22, vp.M34 - vp.M32, vp.M44 - vp.M42)),
-            FrustumPlane4 = NormalizePlane(new(vp.M13,           vp.M23,           vp.M33,           vp.M43)),
-            FrustumPlane5 = NormalizePlane(new(vp.M14 - vp.M13, vp.M24 - vp.M23, vp.M34 - vp.M33, vp.M44 - vp.M43)),
             Time = totalTime,
             LightDirection = -Vector3.Normalize(cameraPos)
-        }], 0);
+        };
+
+        sc.FrustumPlanes[0] = NormalizePlane(new(vp.M11 + vp.M14, vp.M21 + vp.M24, vp.M31 + vp.M34, vp.M41 + vp.M44));
+        sc.FrustumPlanes[1] = NormalizePlane(new(vp.M14 - vp.M11, vp.M24 - vp.M21, vp.M34 - vp.M31, vp.M44 - vp.M41));
+        sc.FrustumPlanes[2] = NormalizePlane(new(vp.M12 + vp.M14, vp.M22 + vp.M24, vp.M32 + vp.M34, vp.M42 + vp.M44));
+        sc.FrustumPlanes[3] = NormalizePlane(new(vp.M14 - vp.M12, vp.M24 - vp.M22, vp.M34 - vp.M32, vp.M44 - vp.M42));
+        sc.FrustumPlanes[4] = NormalizePlane(new(vp.M13, vp.M23, vp.M33, vp.M43));
+        sc.FrustumPlanes[5] = NormalizePlane(new(vp.M14 - vp.M13, vp.M24 - vp.M23, vp.M34 - vp.M33, vp.M44 - vp.M43));
+
+        constantBuffer.Upload([sc], 0);
     }
 
     public void Render()
@@ -383,6 +393,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
     private static Vector4 NormalizePlane(Vector4 plane)
     {
         float length = new Vector3(plane.X, plane.Y, plane.Z).Length();
+
         return plane / length;
     }
 }
@@ -417,26 +428,17 @@ file struct SceneConstants
     public Matrix4x4 ViewProjection;
 
     [FieldOffset(64)]
-    public Vector4 FrustumPlane0;
-
-    [FieldOffset(80)]
-    public Vector4 FrustumPlane1;
-
-    [FieldOffset(96)]
-    public Vector4 FrustumPlane2;
-
-    [FieldOffset(112)]
-    public Vector4 FrustumPlane3;
-
-    [FieldOffset(128)]
-    public Vector4 FrustumPlane4;
-
-    [FieldOffset(144)]
-    public Vector4 FrustumPlane5;
+    public FrustumPlanes FrustumPlanes;
 
     [FieldOffset(160)]
     public float Time;
 
     [FieldOffset(164)]
     public Vector3 LightDirection;
+}
+
+[InlineArray(6)]
+file struct FrustumPlanes
+{
+    private Vector4 _element;
 }

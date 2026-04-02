@@ -5,32 +5,6 @@ internal unsafe class RayTracingRenderer : IRenderer
     private const uint ThreadGroupSize = 16;
 
     private const string ShaderSource = """
-        struct Sphere
-        {
-            private float4 CenterAndRadius;
-
-            private float4 ColorAndPadding;
-
-            property float3 Center { get { return CenterAndRadius.xyz; } }
-
-            property float Radius { get { return CenterAndRadius.w; } }
-
-            property float3 Color { get { return ColorAndPadding.xyz; } }
-        };
-
-        RaytracingAccelerationStructure scene;
-        StructuredBuffer<Sphere> spheres;
-        RWTexture2D<float4> outputTexture;
-
-        struct CameraConstants
-        {
-            private float4 PositionAndPadding;
-
-            property float3 Position { get { return PositionAndPadding.xyz; } }
-        };
-
-        ConstantBuffer<CameraConstants> camera;
-
         static const float RayEpsilon = 0.001;
         static const float TwoPi = 6.2831853;
         static const uint SphereCount = 3;
@@ -47,6 +21,31 @@ internal unsafe class RayTracingRenderer : IRenderer
         static const float3 LightDir = float3(0.6667, 0.6667, -0.3333);
         static const float3 LightColor = float3(1.0, 0.98, 0.95);
         static const float3 AmbientColor = float3(0.15, 0.15, 0.2);
+
+        struct Sphere
+        {
+            private float4 CenterAndRadius;
+
+            private float4 ColorAndPadding;
+
+            property float3 Center { get { return CenterAndRadius.xyz; } }
+
+            property float Radius { get { return CenterAndRadius.w; } }
+
+            property float3 Color { get { return ColorAndPadding.xyz; } }
+        };
+
+        struct CameraConstants
+        {
+            private float4 PositionAndPadding;
+
+            property float3 Position { get { return PositionAndPadding.xyz; } }
+        };
+
+        RaytracingAccelerationStructure scene;
+        StructuredBuffer<Sphere> spheres;
+        RWTexture2D<float4> outputTexture;
+        ConstantBuffer<CameraConstants> camera;
 
         float3 SampleSky(float3 direction)
         {
@@ -100,6 +99,7 @@ internal unsafe class RayTracingRenderer : IRenderer
                 float hFactor = saturate(1.0 - toSphere.y / (r * 3.0));
                 ao -= occl * hFactor * 0.4;
             }
+
             litColor *= max(ao, 0.3);
 
             float dist = length(hitPoint.xz);
@@ -603,13 +603,11 @@ internal unsafe class RayTracingRenderer : IRenderer
         totalTime += (float)deltaTime;
 
         float angle = totalTime * 0.3f;
-        Vector3 cameraPos = new(
-            12.0f * MathF.Sin(angle),
-            4.0f + MathF.Sin(totalTime * 0.2f),
-            -12.0f * MathF.Cos(angle)
-        );
 
-        cameraBuffer.Upload([new CameraConstants { Position = cameraPos }], 0);
+        cameraBuffer.Upload([new CameraConstants()
+        {
+            Position = new(12.0f * MathF.Sin(angle), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(angle))
+        }], 0);
     }
 
     public void Render()
