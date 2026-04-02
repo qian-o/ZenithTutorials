@@ -1,6 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-App.Run<TexturedQuadRenderer>();
+App.Run<SpinningCubeRenderer>();
 
 App.Cleanup();
