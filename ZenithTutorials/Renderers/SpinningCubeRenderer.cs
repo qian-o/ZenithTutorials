@@ -23,7 +23,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         {
             float4 Position : SV_POSITION;
 
-            float4 Color : COLOR0;
+            float4 Color : COLOR;
         };
 
         ConstantBuffer<MVPConstants> mvp;

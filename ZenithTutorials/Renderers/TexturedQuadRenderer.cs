@@ -14,7 +14,7 @@ internal unsafe class TexturedQuadRenderer : IRenderer
         {
             float4 Position : SV_POSITION;
 
-            float2 TexCoord : TEXCOORD0;
+            float2 TexCoord : TEXCOORD;
         };
 
         Texture2D shaderTexture;

@@ -58,18 +58,30 @@ internal unsafe class MeshShadingRenderer : IRenderer
 
             float4 FrustumPlanes[6];
 
-            float Time;
+            private float4 TimeAndLightDirection;
 
-            float3 LightDirection;
+            property float Time
+            {
+                get {
+                    return TimeAndLightDirection.x;
+                }
+            }
+    
+            property float3 LightDirection
+            {
+                get {
+                    return TimeAndLightDirection.yzw;
+                }
+            }
         };
 
         struct VertexOutput
         {
             float4 Position : SV_POSITION;
 
-            float3 WorldNormal : NORMAL0;
+            float3 WorldNormal : WORLDNORMAL;
 
-            float3 Color : COLOR0;
+            float3 Color : COLOR;
         };
 
         struct Payload
