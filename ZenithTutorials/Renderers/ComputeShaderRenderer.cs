@@ -4,7 +4,7 @@ internal class ComputeShaderRenderer : IRenderer
 {
     private const uint ThreadGroupSize = 16;
 
-    private const string ComputeShaderSource = """
+    private const string ShaderSource = """
         Texture2D inputTexture;
         RWTexture2D outputTexture;
 
@@ -69,7 +69,7 @@ internal class ComputeShaderRenderer : IRenderer
             Resources = [inputTexture, outputTexture]
         });
 
-        using Shader computeShader = App.Context.LoadShaderFromSource(ComputeShaderSource, "CSMain", ShaderStageFlags.Compute);
+        using Shader computeShader = App.Context.LoadShaderFromSource(ShaderSource, "CSMain", ShaderStageFlags.Compute);
 
         pipeline = App.Context.CreateComputePipeline(new()
         {

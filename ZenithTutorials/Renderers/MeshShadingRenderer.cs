@@ -253,7 +253,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         {
             uint next = (uint)((lon + 1) % lonSegments);
 
-            sphereTriangles.Add(new() { I0 = 0, I1 = (uint)(1 + lon), I2 = 1 + next });
+            sphereTriangles.Add(new() { Index0 = 0, Index1 = (uint)(1 + lon), Index2 = 1 + next });
         }
 
         for (int lat = 0; lat < latSegments - 2; lat++)
@@ -266,8 +266,8 @@ internal unsafe class MeshShadingRenderer : IRenderer
                 uint bl = (uint)(1 + (lat + 1) * lonSegments + lon);
                 uint br = (uint)(1 + (lat + 1) * lonSegments) + next;
 
-                sphereTriangles.Add(new() { I0 = tl, I1 = bl, I2 = tr });
-                sphereTriangles.Add(new() { I0 = tr, I1 = bl, I2 = br });
+                sphereTriangles.Add(new() { Index0 = tl, Index1 = bl, Index2 = tr });
+                sphereTriangles.Add(new() { Index0 = tr, Index1 = bl, Index2 = br });
             }
         }
 
@@ -278,7 +278,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         {
             uint next = (uint)((lon + 1) % lonSegments);
 
-            sphereTriangles.Add(new() { I0 = bottomPole, I1 = lastRing + next, I2 = lastRing + (uint)lon });
+            sphereTriangles.Add(new() { Index0 = bottomPole, Index1 = lastRing + next, Index2 = lastRing + (uint)lon });
         }
 
         Vertex[] vertexData = [.. sphereVertices];
@@ -431,13 +431,13 @@ file struct Vertex
 file struct Triangle
 {
     [FieldOffset(0)]
-    public uint I0;
+    public uint Index0;
 
     [FieldOffset(4)]
-    public uint I1;
+    public uint Index1;
 
     [FieldOffset(8)]
-    public uint I2;
+    public uint Index2;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 176)]

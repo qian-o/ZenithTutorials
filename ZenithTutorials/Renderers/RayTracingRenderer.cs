@@ -438,12 +438,12 @@ internal unsafe class RayTracingRenderer : IRenderer
 
     private readonly Buffer floorVertexBuffer;
     private readonly Buffer floorIndexBuffer;
-    private readonly Buffer constantsBuffer;
-    private readonly Buffer sphereBuffer;
     private readonly Buffer aabbBuffer;
     private readonly BottomLevelAccelerationStructure floorBlas;
     private readonly BottomLevelAccelerationStructure sphereBlas;
     private readonly TopLevelAccelerationStructure tlas;
+    private readonly Buffer constantsBuffer;
+    private readonly Buffer sphereBuffer;
     private readonly ResourceLayout resourceLayout;
     private readonly ComputePipeline pipeline;
 
@@ -483,27 +483,12 @@ internal unsafe class RayTracingRenderer : IRenderer
         });
         floorIndexBuffer.Upload(floorIndices, 0);
 
-        constantsBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)sizeof(Constants),
-            StrideInBytes = (uint)sizeof(Constants),
-            Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
-        });
-
         Sphere[] spheres =
         [
             new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
             new() { Center = new( 2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
             new() { Center = new( 0.0f, 0.6f, -3.0f), Radius = 0.6f, Color = new(0.9f, 0.7f, 0.2f) }
         ];
-
-        sphereBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(Sphere) * spheres.Length),
-            StrideInBytes = (uint)sizeof(Sphere),
-            Flags = BufferUsageFlags.ShaderResource
-        });
-        sphereBuffer.Upload(spheres, 0);
 
         Vector3[] aabbs = new Vector3[spheres.Length * 2];
         for (int i = 0; i < spheres.Length; i++)
@@ -590,6 +575,21 @@ internal unsafe class RayTracingRenderer : IRenderer
         });
 
         commandBuffer.Submit(waitForCompletion: true);
+
+        constantsBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)sizeof(Constants),
+            StrideInBytes = (uint)sizeof(Constants),
+            Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
+        });
+
+        sphereBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(Sphere) * spheres.Length),
+            StrideInBytes = (uint)sizeof(Sphere),
+            Flags = BufferUsageFlags.ShaderResource
+        });
+        sphereBuffer.Upload(spheres, 0);
 
         resourceLayout = App.Context.CreateResourceLayout(new()
         {
@@ -684,12 +684,12 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         pipeline.Dispose();
         resourceLayout.Dispose();
+        sphereBuffer.Dispose();
+        constantsBuffer.Dispose();
         tlas.Dispose();
         sphereBlas.Dispose();
         floorBlas.Dispose();
-        constantsBuffer.Dispose();
         aabbBuffer.Dispose();
-        sphereBuffer.Dispose();
         floorIndexBuffer.Dispose();
         floorVertexBuffer.Dispose();
     }

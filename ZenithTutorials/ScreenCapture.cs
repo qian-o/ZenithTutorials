@@ -1,10 +1,9 @@
-﻿using System.Runtime.CompilerServices;
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace ZenithTutorials;
 
-public static class ScreenCapture
+internal static class ScreenCapture
 {
     public static void CaptureToFile(GraphicsContext context, FrameBuffer frameBuffer, string filePath)
     {
@@ -86,7 +85,7 @@ public static class ScreenCapture
                                                        "png",
                                                        $"Screenshot_{DateTime.Now:yyyyMMdd_HHmmss}");
 
-        return result == 0 ? filePath : null;
+        return result is 0 ? filePath : null;
     }
 
     private static void SaveAsPng(byte[] pixels, int width, int height, string filePath)
