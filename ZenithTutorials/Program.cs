@@ -9,7 +9,7 @@ using ZenithTutorials.Renderers;
     ("Compute Shader",   App.Run<ComputeShaderRenderer>),
     ("Indirect Drawing", App.Run<IndirectDrawingRenderer>),
     ("Ray Tracing",      App.Run<RayTracingRenderer>),
-    ("Mesh Shading",     App.Run<MeshShadingRenderer>),
+    ("Mesh Shading",     App.Run<MeshShadingRenderer>)
 ];
 
 for (int i = 0; i < tutorials.Length; i++)
