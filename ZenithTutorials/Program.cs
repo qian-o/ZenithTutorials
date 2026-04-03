@@ -21,5 +21,7 @@ Console.Write("Select a tutorial to run: ");
 
 if (int.TryParse(Console.ReadKey().KeyChar.ToString(), out int choice) && choice >= 1 && choice <= tutorials.Length)
 {
+    Console.WriteLine($"\nRunning '{tutorials[choice - 1].Name}' tutorial...");
+
     tutorials[choice - 1].Run();
 }
