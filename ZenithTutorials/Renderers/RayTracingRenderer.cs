@@ -22,6 +22,18 @@ internal unsafe class RayTracingRenderer : IRenderer
         static const float3 LightColor = float3(1.0, 0.98, 0.95);
         static const float3 AmbientColor = float3(0.15, 0.15, 0.2);
 
+        struct Constants
+        {
+            private float4 PositionAndPadding;
+
+            property float3 Position
+            {
+                get {
+                    return PositionAndPadding.xyz;
+                }
+            }
+        };
+
         struct Sphere
         {
             private float4 CenterAndRadius;
@@ -50,22 +62,10 @@ internal unsafe class RayTracingRenderer : IRenderer
             }
         };
 
-        struct CameraConstants
-        {
-            private float4 PositionAndPadding;
-
-            property float3 Position
-            {
-                get {
-                    return PositionAndPadding.xyz;
-                }
-            }
-        };
-
         RaytracingAccelerationStructure scene;
+        ConstantBuffer<Constants> constants;
         StructuredBuffer<Sphere> spheres;
         RWTexture2D<float4> outputTexture;
-        ConstantBuffer<CameraConstants> camera;
 
         float3 SampleSky(float3 direction)
         {
@@ -367,7 +367,7 @@ internal unsafe class RayTracingRenderer : IRenderer
             float aspectRatio = float(width) / float(height);
             float fov = tan(radians(45.0) * 0.5);
 
-            float3 cameraPos = camera.Position;
+            float3 cameraPos = constants.Position;
             float3 cameraTarget = float3(0.0, 0.5, 0.0);
             float3 cameraUp = float3(0.0, 1.0, 0.0);
 
@@ -438,9 +438,9 @@ internal unsafe class RayTracingRenderer : IRenderer
 
     private readonly Buffer floorVertexBuffer;
     private readonly Buffer floorIndexBuffer;
+    private readonly Buffer constantsBuffer;
     private readonly Buffer sphereBuffer;
     private readonly Buffer aabbBuffer;
-    private readonly Buffer cameraBuffer;
     private readonly BottomLevelAccelerationStructure floorBlas;
     private readonly BottomLevelAccelerationStructure sphereBlas;
     private readonly TopLevelAccelerationStructure tlas;
@@ -483,7 +483,14 @@ internal unsafe class RayTracingRenderer : IRenderer
         });
         floorIndexBuffer.Upload(floorIndices, 0);
 
-        Sphere[] sphereData =
+        constantsBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)sizeof(Constants),
+            StrideInBytes = (uint)sizeof(Constants),
+            Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
+        });
+
+        Sphere[] spheres =
         [
             new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
             new() { Center = new( 2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
@@ -492,26 +499,26 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         sphereBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)(sizeof(Sphere) * sphereData.Length),
+            SizeInBytes = (uint)(sizeof(Sphere) * spheres.Length),
             StrideInBytes = (uint)sizeof(Sphere),
             Flags = BufferUsageFlags.ShaderResource
         });
-        sphereBuffer.Upload(sphereData, 0);
+        sphereBuffer.Upload(spheres, 0);
 
-        Vector3[] aabbData = new Vector3[sphereData.Length * 2];
-        for (int i = 0; i < sphereData.Length; i++)
+        Vector3[] aabbs = new Vector3[spheres.Length * 2];
+        for (int i = 0; i < spheres.Length; i++)
         {
-            aabbData[i * 2] = sphereData[i].Center - new Vector3(sphereData[i].Radius);
-            aabbData[(i * 2) + 1] = sphereData[i].Center + new Vector3(sphereData[i].Radius);
+            aabbs[i * 2] = spheres[i].Center - new Vector3(spheres[i].Radius);
+            aabbs[(i * 2) + 1] = spheres[i].Center + new Vector3(spheres[i].Radius);
         }
 
         aabbBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)(sizeof(Vector3) * aabbData.Length),
+            SizeInBytes = (uint)(sizeof(Vector3) * aabbs.Length),
             StrideInBytes = (uint)(sizeof(Vector3) * 2),
             Flags = BufferUsageFlags.ShaderResource | BufferUsageFlags.AccelerationStructure
         });
-        aabbBuffer.Upload(aabbData, 0);
+        aabbBuffer.Upload(aabbs, 0);
 
         CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
 
@@ -549,7 +556,7 @@ internal unsafe class RayTracingRenderer : IRenderer
                     AABBs = new()
                     {
                         Buffer = aabbBuffer,
-                        Count = (uint)sphereData.Length,
+                        Count = (uint)spheres.Length,
                         StrideInBytes = (uint)(sizeof(Vector3) * 2)
                     },
                     Flags = RayTracingGeometryFlags.Opaque
@@ -584,21 +591,14 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         commandBuffer.Submit(waitForCompletion: true);
 
-        cameraBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)sizeof(CameraConstants),
-            StrideInBytes = (uint)sizeof(CameraConstants),
-            Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
-        });
-
         resourceLayout = App.Context.CreateResourceLayout(new()
         {
             Bindings = BindingHelper.Bindings
             (
                 new() { Type = ResourceType.AccelerationStructure, Count = 1, StageFlags = ShaderStageFlags.Compute },
+                new() { Type = ResourceType.ConstantBuffer, Count = 1, StageFlags = ShaderStageFlags.Compute },
                 new() { Type = ResourceType.StructuredBuffer, Count = 1, StageFlags = ShaderStageFlags.Compute },
-                new() { Type = ResourceType.TextureReadWrite, Count = 1, StageFlags = ShaderStageFlags.Compute },
-                new() { Type = ResourceType.ConstantBuffer, Count = 1, StageFlags = ShaderStageFlags.Compute }
+                new() { Type = ResourceType.TextureReadWrite, Count = 1, StageFlags = ShaderStageFlags.Compute }
             )
         });
 
@@ -620,7 +620,7 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         float angle = totalTime * 0.3f;
 
-        cameraBuffer.Upload([new CameraConstants()
+        constantsBuffer.Upload([new Constants()
         {
             Position = new(12.0f * MathF.Sin(angle), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(angle))
         }], 0);
@@ -644,7 +644,7 @@ internal unsafe class RayTracingRenderer : IRenderer
         resourceTable ??= App.Context.CreateResourceTable(new()
         {
             Layout = resourceLayout,
-            Resources = [tlas, sphereBuffer, outputTexture, cameraBuffer]
+            Resources = [tlas, constantsBuffer, sphereBuffer, outputTexture]
         });
 
         CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
@@ -687,7 +687,7 @@ internal unsafe class RayTracingRenderer : IRenderer
         tlas.Dispose();
         sphereBlas.Dispose();
         floorBlas.Dispose();
-        cameraBuffer.Dispose();
+        constantsBuffer.Dispose();
         aabbBuffer.Dispose();
         sphereBuffer.Dispose();
         floorIndexBuffer.Dispose();
@@ -696,7 +696,7 @@ internal unsafe class RayTracingRenderer : IRenderer
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 16)]
-file struct CameraConstants
+file struct Constants
 {
     [FieldOffset(0)]
     public Vector3 Position;

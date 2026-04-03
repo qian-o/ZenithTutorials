@@ -17,8 +17,8 @@ internal unsafe class TexturedQuadRenderer : IRenderer
             float2 TexCoord : TEXCOORD;
         };
 
-        Texture2D shaderTexture;
-        SamplerState samplerState;
+        Texture2D texture;
+        SamplerState sampler;
 
         PSInput VSMain(VSInput input)
         {
@@ -31,7 +31,7 @@ internal unsafe class TexturedQuadRenderer : IRenderer
 
         float4 PSMain(PSInput input) : SV_TARGET
         {
-            return shaderTexture.Sample(samplerState, input.TexCoord);
+            return texture.Sample(sampler, input.TexCoord);
         }
         """;
 

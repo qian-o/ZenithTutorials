@@ -3,15 +3,6 @@
 internal unsafe class SpinningCubeRenderer : IRenderer
 {
     private const string ShaderSource = """
-        struct MVPConstants
-        {
-            float4x4 Model;
-
-            float4x4 View;
-
-            float4x4 Projection;
-        };
-
         struct VSInput
         {
             float3 Position : POSITION0;
@@ -26,15 +17,23 @@ internal unsafe class SpinningCubeRenderer : IRenderer
             float4 Color : COLOR;
         };
 
-        ConstantBuffer<MVPConstants> mvp;
+        struct Constants
+        {
+            float4x4 Model;
+
+            float4x4 View;
+
+            float4x4 Projection;
+        };
+
+        ConstantBuffer<Constants> constants;
 
         PSInput VSMain(VSInput input)
         {
-            float4 worldPos = mul(float4(input.Position, 1.0), mvp.Model);
-            float4 viewPos = mul(worldPos, mvp.View);
+            float4x4 mvp = mul(mul(constants.Model, constants.View), constants.Projection);
 
             PSInput output;
-            output.Position = mul(viewPos, mvp.Projection);
+            output.Position = mul(float4(input.Position, 1.0), mvp);
             output.Color = input.Color;
 
             return output;
@@ -48,7 +47,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
 
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
-    private readonly Buffer constantBuffer;
+    private readonly Buffer constantsBuffer;
     private readonly ResourceLayout resourceLayout;
     private readonly ResourceTable resourceTable;
     private readonly GraphicsPipeline pipeline;
@@ -95,10 +94,10 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         });
         indexBuffer.Upload(indices, 0);
 
-        constantBuffer = App.Context.CreateBuffer(new()
+        constantsBuffer = App.Context.CreateBuffer(new()
         {
-            SizeInBytes = (uint)sizeof(MVPConstants),
-            StrideInBytes = (uint)sizeof(MVPConstants),
+            SizeInBytes = (uint)sizeof(Constants),
+            StrideInBytes = (uint)sizeof(Constants),
             Flags = BufferUsageFlags.Constant | BufferUsageFlags.MapWrite
         });
 
@@ -113,7 +112,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         resourceTable = App.Context.CreateResourceTable(new()
         {
             Layout = resourceLayout,
-            Resources = [constantBuffer]
+            Resources = [constantsBuffer]
         });
 
         InputLayout inputLayout = new();
@@ -148,7 +147,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         Matrix4x4 view = Matrix4x4.CreateLookAt(new(0, 0, 3), Vector3.Zero, Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
 
-        constantBuffer.Upload([new MVPConstants() { Model = model, View = view, Projection = projection }], 0);
+        constantsBuffer.Upload([new Constants() { Model = model, View = view, Projection = projection }], 0);
     }
 
     public void Render()
@@ -183,7 +182,7 @@ internal unsafe class SpinningCubeRenderer : IRenderer
         pipeline.Dispose();
         resourceTable.Dispose();
         resourceLayout.Dispose();
-        constantBuffer.Dispose();
+        constantsBuffer.Dispose();
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
@@ -198,7 +197,7 @@ file struct Vertex(Vector3 position, Vector4 color)
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 192)]
-file struct MVPConstants
+file struct Constants
 {
     [FieldOffset(0)]
     public Matrix4x4 Model;
