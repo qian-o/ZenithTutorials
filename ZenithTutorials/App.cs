@@ -68,48 +68,50 @@ internal static class App
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
-        using TRenderer renderer = new();
-
-        window.Update += delta =>
+        try
         {
-            if (Width is 0 || Height is 0)
+            using TRenderer renderer = new();
+
+            window.Update += delta =>
             {
-                return;
-            }
+                if (Width is 0 || Height is 0)
+                {
+                    return;
+                }
 
-            renderer.Update(delta);
-        };
+                renderer.Update(delta);
+            };
 
-        window.Render += delta =>
+            window.Render += delta =>
+            {
+                if (Width is 0 || Height is 0)
+                {
+                    return;
+                }
+
+                renderer.Render();
+                swapChain.Present();
+            };
+
+            window.Resize += size =>
+            {
+                if (Width is 0 || Height is 0)
+                {
+                    return;
+                }
+
+                renderer.Resize(Width, Height);
+                swapChain.Resize(Width, Height);
+            };
+
+            window.Run();
+        }
+        finally
         {
-            if (Width is 0 || Height is 0)
-            {
-                return;
-            }
+            swapChain.Dispose();
+            window.Dispose();
 
-            renderer.Render();
-            swapChain.Present();
-        };
-
-        window.Resize += size =>
-        {
-            if (Width is 0 || Height is 0)
-            {
-                return;
-            }
-
-            renderer.Resize(Width, Height);
-            swapChain.Resize(Width, Height);
-        };
-
-        window.Run();
-    }
-
-    public static void Cleanup()
-    {
-        swapChain.Dispose();
-        window.Dispose();
-
-        Context.Dispose();
+            Context.Dispose();
+        }
     }
 }
