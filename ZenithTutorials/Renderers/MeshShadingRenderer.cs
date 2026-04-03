@@ -261,10 +261,10 @@ internal unsafe class MeshShadingRenderer : IRenderer
             for (int lon = 0; lon < lonSegments; lon++)
             {
                 uint next = (uint)((lon + 1) % lonSegments);
-                uint tl = (uint)(1 + lat * lonSegments + lon);
-                uint tr = (uint)(1 + lat * lonSegments) + next;
-                uint bl = (uint)(1 + (lat + 1) * lonSegments + lon);
-                uint br = (uint)(1 + (lat + 1) * lonSegments) + next;
+                uint tl = (uint)(1 + (lat * lonSegments) + lon);
+                uint tr = (uint)(1 + (lat * lonSegments)) + next;
+                uint bl = (uint)(1 + ((lat + 1) * lonSegments) + lon);
+                uint br = (uint)(1 + ((lat + 1) * lonSegments)) + next;
 
                 sphereTriangles.Add(new() { Index0 = tl, Index1 = bl, Index2 = tr });
                 sphereTriangles.Add(new() { Index0 = tr, Index1 = bl, Index2 = br });
@@ -272,7 +272,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         }
 
         uint bottomPole = (uint)(sphereVertices.Count - 1);
-        uint lastRing = 1 + (latSegments - 2) * lonSegments;
+        uint lastRing = 1 + ((latSegments - 2) * lonSegments);
 
         for (int lon = 0; lon < lonSegments; lon++)
         {
