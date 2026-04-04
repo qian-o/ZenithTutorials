@@ -82,10 +82,15 @@ internal unsafe class RayTracingRenderer : IRenderer
 
         float3 ACESFilm(float3 x)
         {
-            x *= 1.2;
+            x *= 1.6;
             float3 a = x * (x * 2.51 + 0.03);
             float3 b = x * (x * 2.43 + 0.59) + 0.14;
-            return saturate(a / b);
+            float3 result = saturate(a / b);
+
+            float luma = dot(result, float3(0.2126, 0.7152, 0.0722));
+            result = saturate(lerp(float3(luma, luma, luma), result, 1.5));
+
+            return result;
         }
 
         float SchlickFresnel(float cosTheta, float f0)
