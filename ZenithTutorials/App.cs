@@ -7,8 +7,14 @@ namespace ZenithTutorials;
 
 internal static class App
 {
-    private static readonly IWindow window;
-    private static readonly SwapChain swapChain;
+    private const uint CaptureWidth = 1280;
+    private const uint CaptureHeight = 720;
+
+    private static IWindow? window;
+    private static SwapChain? swapChain;
+
+    private static uint width = CaptureWidth;
+    private static uint height = CaptureHeight;
 
     static App()
     {
@@ -32,15 +38,33 @@ internal static class App
 
         Context.ValidationMessage += static (_, args) => Console.WriteLine($"[{args.Severity}] {args.Message}");
 
+    }
+
+    public static GraphicsContext Context { get; }
+
+    public static PixelFormat ColorFormat => PixelFormat.B8G8R8A8UNorm;
+
+    public static uint Width => width;
+
+    public static uint Height => height;
+
+    public static string ShaderPath(string file)
+    {
+        return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
+    }
+
+    public static void Run<TRenderer>() where TRenderer : IRenderer, new()
+    {
         window = Window.Create(WindowOptions.Default with
         {
             API = GraphicsAPI.None,
             Title = "Zenith.NET Tutorials",
-            Size = new(1280, 720)
+            Size = new((int)CaptureWidth, (int)CaptureHeight)
         });
 
         window.Initialize();
         window.Center();
+        UpdateDrawableSize();
 
         Surface surface;
         if (OperatingSystem.IsWindows())
@@ -59,25 +83,8 @@ internal static class App
         swapChain = Context.CreateSwapChain(new()
         {
             Surface = surface,
-            Format = PixelFormat.B8G8R8A8UNorm
+            Format = ColorFormat
         });
-    }
-
-    public static GraphicsContext Context { get; }
-
-    public static PixelFormat ColorFormat => swapChain.Desc.Format;
-
-    public static uint Width => (uint)window.FramebufferSize.X;
-
-    public static uint Height => (uint)window.FramebufferSize.Y;
-
-    public static string ShaderPath(string file)
-    {
-        return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
-    }
-
-    public static void Run<TRenderer>() where TRenderer : IRenderer, new()
-    {
         try
         {
             using TRenderer renderer = new();
@@ -111,6 +118,8 @@ internal static class App
 
             window.Resize += _ =>
             {
+                UpdateDrawableSize();
+
                 if (Width is 0 || Height is 0)
                 {
                     return;
@@ -128,5 +137,39 @@ internal static class App
             window.Dispose();
             Context.Dispose();
         }
+    }
+
+    public static void Capture<TRenderer>(string filePath, double elapsedTime) where TRenderer : IRenderer, new()
+    {
+        using Texture drawable = Context.CreateTexture(new()
+        {
+            Type = TextureType.Texture2D,
+            Format = ColorFormat,
+            Width = CaptureWidth,
+            Height = CaptureHeight,
+            Depth = 1,
+            MipLevels = 1,
+            ArrayLayers = 1,
+            SampleCount = SampleCount.Count1,
+            Usages = TextureUsages.Sampled | TextureUsages.ColorAttachment | TextureUsages.TransferSrc
+        });
+        using TRenderer renderer = new();
+
+        renderer.Update(elapsedTime);
+
+        CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
+        renderer.Render(commandBuffer, drawable);
+        ScreenCapture.CaptureToFile(commandBuffer, drawable, filePath);
+    }
+
+    public static void Shutdown()
+    {
+        Context.Dispose();
+    }
+
+    private static void UpdateDrawableSize()
+    {
+        width = (uint)window!.FramebufferSize.X;
+        height = (uint)window.FramebufferSize.Y;
     }
 }

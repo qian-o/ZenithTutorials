@@ -4,33 +4,29 @@ Runnable source for the [Zenith.NET tutorials](https://qian-o.github.io/Zenith.N
 
 This repository is the source of truth for tutorial code. The documentation explains each workload and links here for complete, buildable C# and Slang sources.
 
-## Repository Layout
-
-ZenithTutorials references the current Zenith.NET source tree directly. Clone both repositories into the same parent directory:
-
-```text
-qian-o/
-|-- Zenith.NET/
-`-- ZenithTutorials/
-```
-
-Until the redesigned RHI is merged into `master`, use its matching branch:
-
-```powershell
-git clone --branch refactor/rhi-redesign https://github.com/qian-o/Zenith.NET.git
-git clone https://github.com/qian-o/ZenithTutorials.git
-```
+> [!NOTE]
+> The project temporarily uses local `ProjectReference` items while the redesigned RHI is under development. These references will return to the published Zenith.NET NuGet packages when that release is available.
 
 ## Build and Run
 
-Install the .NET 10 SDK, then run:
+Install the .NET 10 SDK, then build and run the project:
 
-```powershell
-dotnet build .\ZenithTutorials\ZenithTutorials.slnx
-dotnet run --project .\ZenithTutorials\ZenithTutorials\ZenithTutorials.csproj
+```shell
+dotnet build ZenithTutorials.slnx
+dotnet run --project ZenithTutorials/ZenithTutorials.csproj
 ```
 
 Select a tutorial from the console menu. The shared application host creates the window, graphics context, swap chain, and command buffers; each renderer records one workload.
+
+## Screenshots
+
+The documentation images are generated from the real renderers at 1280 by 720 pixels. Regenerate all seven results with:
+
+```shell
+dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture all --output ZenithTutorials/Assets/Screenshots
+```
+
+Use a tutorial slug instead of `all` to capture one result, such as `--capture ray-tracing`.
 
 ## Tutorials
 
@@ -51,4 +47,5 @@ Shared host sources:
 - [App.cs](ZenithTutorials/App.cs)
 - [IRenderer.cs](ZenithTutorials/IRenderer.cs)
 - [CocoaHelper.cs](ZenithTutorials/CocoaHelper.cs)
+- [ScreenCapture.cs](ZenithTutorials/ScreenCapture.cs)
 - [Usings.cs](ZenithTutorials/Usings.cs)
