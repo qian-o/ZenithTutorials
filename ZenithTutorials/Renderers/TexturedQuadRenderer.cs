@@ -1,123 +1,96 @@
-﻿namespace ZenithTutorials.Renderers;
+namespace ZenithTutorials.Renderers;
 
-internal unsafe class TexturedQuadRenderer : IRenderer
+internal unsafe sealed class TexturedQuadRenderer : IRenderer
 {
-    private const string ShaderSource = """
-        struct VSInput
-        {
-            float3 Position : POSITION0;
-
-            float2 TexCoord : TEXCOORD0;
-        };
-
-        struct PSInput
-        {
-            float4 Position : SV_POSITION;
-
-            float2 TexCoord : TEXCOORD;
-        };
-
-        Texture2D texture;
-        SamplerState sampler;
-
-        PSInput VSMain(VSInput input)
-        {
-            PSInput output;
-            output.Position = float4(input.Position, 1.0);
-            output.TexCoord = input.TexCoord;
-
-            return output;
-        }
-
-        float4 PSMain(PSInput input) : SV_TARGET
-        {
-            return texture.Sample(sampler, input.TexCoord);
-        }
-        """;
-
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
     private readonly Texture texture;
     private readonly Sampler sampler;
-    private readonly ResourceLayout resourceLayout;
-    private readonly ResourceTable resourceTable;
+    private readonly Buffer constantBuffer;
     private readonly GraphicsPipeline pipeline;
 
     public TexturedQuadRenderer()
     {
         Vertex[] vertices =
         [
-            new(new(-0.5f,  0.5f, 0.0f), new(0.0f, 0.0f)),
-            new(new( 0.5f,  0.5f, 0.0f), new(1.0f, 0.0f)),
-            new(new( 0.5f, -0.5f, 0.0f), new(1.0f, 1.0f)),
-            new(new(-0.5f, -0.5f, 0.0f), new(0.0f, 1.0f))
+            new() { Position = new(-0.5f, 0.5f, 0.0f), TexCoord = new(0.0f, 0.0f) },
+            new() { Position = new(0.5f, 0.5f, 0.0f), TexCoord = new(1.0f, 0.0f) },
+            new() { Position = new(0.5f, -0.5f, 0.0f), TexCoord = new(1.0f, 1.0f) },
+            new() { Position = new(-0.5f, -0.5f, 0.0f), TexCoord = new(0.0f, 1.0f) }
         ];
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
 
-        vertexBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
-            StrideInBytes = (uint)sizeof(Vertex),
-            Flags = BufferUsageFlags.Vertex | BufferUsageFlags.MapWrite
-        });
-        vertexBuffer.Upload(vertices, 0);
+        vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
 
-        indexBuffer = App.Context.CreateBuffer(new()
+        fixed (Vertex* pointer = vertices)
         {
-            SizeInBytes = (uint)(sizeof(uint) * indices.Length),
-            StrideInBytes = sizeof(uint),
-            Flags = BufferUsageFlags.Index | BufferUsageFlags.MapWrite
-        });
-        indexBuffer.Upload(indices, 0);
+            vertexBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
+            });
+        }
 
-        texture = App.Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "shoko.png"), generateMipMaps: true);
+        indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
 
-        sampler = App.Context.CreateSampler(new()
+        fixed (uint* pointer = indices)
         {
-            U = AddressMode.Clamp,
-            V = AddressMode.Clamp,
-            W = AddressMode.Clamp,
-            Filter = Filter.MinLinearMagLinearMipLinear,
-            MaxLod = uint.MaxValue
-        });
+            indexBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(uint) * indices.Length)
+            });
+        }
 
-        resourceLayout = App.Context.CreateResourceLayout(new()
+        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
+        texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
+        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+
+        constantBuffer = App.Context.CreateBuffer(new()
         {
-            Bindings = BindingHelper.Bindings
-            (
-                new() { Type = ResourceType.Texture, Count = 1, StageFlags = ShaderStageFlags.Pixel },
-                new() { Type = ResourceType.Sampler, Count = 1, StageFlags = ShaderStageFlags.Pixel }
-            )
+            SizeInBytes = (uint)sizeof(Constants),
+            Usages = BufferUsages.Constant,
+            Residency = MemoryResidency.CpuWriteOnly
         });
 
-        resourceTable = App.Context.CreateResourceTable(new()
+        Constants constants = new()
         {
-            Layout = resourceLayout,
-            Resources = [texture, sampler]
+            Texture = texture.SampledHandle,
+            Sampler = sampler.Handle
+        };
+
+        constantBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&constants),
+            SizeInBytes = (uint)sizeof(Constants)
         });
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float2, Semantic = ElementSemantic.TexCoord });
 
-        using Shader vertexShader = App.Context.LoadShaderFromSource(ShaderSource, "VSMain", ShaderStageFlags.Vertex);
-        using Shader pixelShader = App.Context.LoadShaderFromSource(ShaderSource, "PSMain", ShaderStageFlags.Pixel);
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("TexturedQuad.slang"), "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("TexturedQuad.slang"), "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
-            RenderStates = new()
-            {
-                RasterizerState = RasterizerStates.CullNone,
-                DepthStencilState = DepthStencilStates.Default,
-                BlendState = BlendStates.Opaque
-            },
-            Vertex = vertexShader,
-            Pixel = pixelShader,
-            ResourceLayout = resourceLayout,
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
             InputLayouts = [inputLayout],
             PrimitiveTopology = PrimitiveTopology.TriangleList,
-            Output = App.FrameBuffer.Output
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                DepthStencilFormat = null,
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullNone(),
+                DepthStencil = DepthStencilState.DepthNone(),
+                Blend = BlendState.Opaque()
+            }
         });
     }
 
@@ -125,27 +98,23 @@ internal unsafe class TexturedQuadRenderer : IRenderer
     {
     }
 
-    public void Render()
+    public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
-
-        commandBuffer.BeginRenderPass(App.FrameBuffer, new()
+        for (uint mipLevel = 0; mipLevel < texture.Desc.MipLevels; mipLevel++)
         {
-            ColorValues = [new(0.1f, 0.1f, 0.1f, 1.0f)],
-            Depth = 1.0f,
-            Stencil = 0,
-            Flags = ClearFlags.All
-        }, resourceTable);
+            commandBuffer.Transition(texture, new() { MipLevel = mipLevel }, TextureLayout.Sampled);
+        }
+
+        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
-        commandBuffer.SetResourceTable(resourceTable);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
+        commandBuffer.SetConstantBuffer(constantBuffer, 0);
         commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();
-
-        commandBuffer.Submit(waitForCompletion: true);
     }
 
     public void Resize(uint width, uint height)
@@ -155,8 +124,7 @@ internal unsafe class TexturedQuadRenderer : IRenderer
     public void Dispose()
     {
         pipeline.Dispose();
-        resourceTable.Dispose();
-        resourceLayout.Dispose();
+        constantBuffer.Dispose();
         sampler.Dispose();
         texture.Dispose();
         indexBuffer.Dispose();
@@ -164,10 +132,22 @@ internal unsafe class TexturedQuadRenderer : IRenderer
     }
 }
 
-[StructLayout(LayoutKind.Sequential)]
-file struct Vertex(Vector3 position, Vector2 texCoord)
+[StructLayout(LayoutKind.Explicit, Size = 20)]
+file struct Vertex
 {
-    public Vector3 Position = position;
+    [FieldOffset(0)]
+    public Vector3 Position;
 
-    public Vector2 TexCoord = texCoord;
+    [FieldOffset(12)]
+    public Vector2 TexCoord;
+}
+
+[StructLayout(LayoutKind.Explicit, Size = 16)]
+file struct Constants
+{
+    [FieldOffset(0)]
+    public ResourceHandle Texture;
+
+    [FieldOffset(8)]
+    public ResourceHandle Sampler;
 }

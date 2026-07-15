@@ -1,83 +1,82 @@
-﻿namespace ZenithTutorials.Renderers;
+namespace ZenithTutorials.Renderers;
 
-internal class ComputeShaderRenderer : IRenderer
+internal unsafe sealed class ComputeShaderRenderer : IRenderer
 {
     private const uint ThreadGroupSize = 16;
 
-    private const string ShaderSource = """
-        Texture2D inputTexture;
-        RWTexture2D outputTexture;
-
-        [numthreads(16, 16, 1)]
-        void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
-        {
-            uint width, height;
-            outputTexture.GetDimensions(width, height);
-
-            if (dispatchThreadID.x >= width || dispatchThreadID.y >= height)
-            {
-                return;
-            }
-
-            float4 color = inputTexture[dispatchThreadID.xy];
-
-            float3 linear = pow(color.rgb, 2.2);
-            float gray = dot(linear, float3(0.2126, 0.7152, 0.0722));
-            gray = pow(gray, 1.0 / 2.2);
-
-            outputTexture[dispatchThreadID.xy] = float4(gray, gray, gray, color.a);
-        }
-        """;
-
     private readonly Texture inputTexture;
     private readonly Texture outputTexture;
-    private readonly ResourceLayout resourceLayout;
-    private readonly ResourceTable resourceTable;
-    private readonly ComputePipeline pipeline;
+    private readonly Sampler sampler;
+    private readonly Buffer constantBuffer;
+    private readonly ComputePipeline computePipeline;
+    private readonly GraphicsPipeline displayPipeline;
 
     private bool processed;
 
     public ComputeShaderRenderer()
     {
-        inputTexture = App.Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "shoko.png"), generateMipMaps: false);
+        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
+        inputTexture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: false);
 
         outputTexture = App.Context.CreateTexture(new()
         {
             Type = TextureType.Texture2D,
-            Format = PixelFormat.B8G8R8A8UNorm,
+            Format = PixelFormat.R32G32B32A32Float,
             Width = inputTexture.Desc.Width,
             Height = inputTexture.Desc.Height,
             Depth = 1,
             MipLevels = 1,
             ArrayLayers = 1,
             SampleCount = SampleCount.Count1,
-            Flags = TextureUsageFlags.ShaderResource | TextureUsageFlags.UnorderedAccess
+            Usages = TextureUsages.Storage | TextureUsages.Sampled
         });
 
-        resourceLayout = App.Context.CreateResourceLayout(new()
+        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+        constantBuffer = App.Context.CreateBuffer(new()
         {
-            Bindings = BindingHelper.Bindings
-            (
-                new() { Type = ResourceType.Texture, Count = 1, StageFlags = ShaderStageFlags.Compute },
-                new() { Type = ResourceType.TextureReadWrite, Count = 1, StageFlags = ShaderStageFlags.Compute }
-            )
+            SizeInBytes = (uint)sizeof(ComputeConstants),
+            Usages = BufferUsages.Constant,
+            Residency = MemoryResidency.CpuWriteOnly
         });
 
-        resourceTable = App.Context.CreateResourceTable(new()
+        ComputeConstants constants = new()
         {
-            Layout = resourceLayout,
-            Resources = [inputTexture, outputTexture]
+            Width = inputTexture.Desc.Width,
+            Height = inputTexture.Desc.Height,
+            Input = inputTexture.SampledHandle,
+            Output = outputTexture.StorageHandle,
+            Image = outputTexture.SampledHandle,
+            Sampler = sampler.Handle
+        };
+
+        constantBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&constants),
+            SizeInBytes = (uint)sizeof(ComputeConstants)
         });
 
-        using Shader computeShader = App.Context.LoadShaderFromSource(ShaderSource, "CSMain", ShaderStageFlags.Compute);
+        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("ComputeShader.slang"), "CSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("ComputeShader.slang"), "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("ComputeShader.slang"), "FSMain"));
 
-        pipeline = App.Context.CreateComputePipeline(new()
+        computePipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
+        displayPipeline = App.Context.CreateGraphicsPipeline(new()
         {
-            Compute = computeShader,
-            ResourceLayout = resourceLayout,
-            ThreadGroupSizeX = ThreadGroupSize,
-            ThreadGroupSizeY = ThreadGroupSize,
-            ThreadGroupSizeZ = 1
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
+            InputLayouts = [],
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullNone(),
+                DepthStencil = DepthStencilState.DepthNone(),
+                Blend = BlendState.Opaque()
+            }
         });
     }
 
@@ -85,41 +84,32 @@ internal class ComputeShaderRenderer : IRenderer
     {
     }
 
-    public void Render()
+    public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
-
         if (!processed)
         {
-            uint dispatchX = (inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize;
-            uint dispatchY = (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize;
-
-            commandBuffer.SetPipeline(pipeline);
-            commandBuffer.SetResourceTable(resourceTable);
-            commandBuffer.Dispatch(dispatchX, dispatchY, 1);
-
+            commandBuffer.Transition(inputTexture, default, TextureLayout.Sampled);
+            commandBuffer.Transition(outputTexture, default, TextureLayout.Storage);
+            commandBuffer.SetPipeline(computePipeline);
+            commandBuffer.SetConstantBuffer(constantBuffer, 0);
+            commandBuffer.Dispatch((inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize, (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
+            commandBuffer.Transition(outputTexture, default, TextureLayout.Sampled);
             processed = true;
         }
 
-        Texture colorTarget = App.FrameBuffer.Desc.ColorAttachments[0].Target;
+        uint width = Math.Min(outputTexture.Desc.Width, App.Width);
+        uint height = Math.Min(outputTexture.Desc.Height, App.Height);
+        int x = (int)((App.Width - width) / 2);
+        int y = (int)((App.Height - height) / 2);
 
-        uint copyWidth = Math.Min(outputTexture.Desc.Width, App.Width);
-        uint copyHeight = Math.Min(outputTexture.Desc.Height, App.Height);
-
-        uint srcX = (outputTexture.Desc.Width - copyWidth) / 2;
-        uint srcY = (outputTexture.Desc.Height - copyHeight) / 2;
-        uint destX = (App.Width - copyWidth) / 2;
-        uint destY = (App.Height - copyHeight) / 2;
-
-        commandBuffer.CopyTexture(outputTexture,
-                                  default,
-                                  new() { X = srcX, Y = srcY, Z = 0 },
-                                  colorTarget,
-                                  default,
-                                  new() { X = destX, Y = destY, Z = 0 },
-                                  new() { Width = copyWidth, Height = copyHeight, Depth = 1 });
-
-        commandBuffer.Submit(waitForCompletion: true);
+        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
+        commandBuffer.SetViewports([new() { X = x, Y = y, Width = width, Height = height, MaxDepth = 1.0f }]);
+        commandBuffer.SetScissors([new() { X = x, Y = y, Width = width, Height = height }]);
+        commandBuffer.SetPipeline(displayPipeline);
+        commandBuffer.SetConstantBuffer(constantBuffer, 0);
+        commandBuffer.Draw(3, 1, 0, 0);
+        commandBuffer.EndRenderPass();
     }
 
     public void Resize(uint width, uint height)
@@ -128,10 +118,33 @@ internal class ComputeShaderRenderer : IRenderer
 
     public void Dispose()
     {
-        pipeline.Dispose();
-        resourceTable.Dispose();
-        resourceLayout.Dispose();
+        displayPipeline.Dispose();
+        computePipeline.Dispose();
+        constantBuffer.Dispose();
+        sampler.Dispose();
         outputTexture.Dispose();
         inputTexture.Dispose();
     }
+}
+
+[StructLayout(LayoutKind.Explicit, Size = 256)]
+file struct ComputeConstants
+{
+    [FieldOffset(0)]
+    public uint Width;
+
+    [FieldOffset(4)]
+    public uint Height;
+
+    [FieldOffset(8)]
+    public ResourceHandle Input;
+
+    [FieldOffset(16)]
+    public ResourceHandle Output;
+
+    [FieldOffset(24)]
+    public ResourceHandle Image;
+
+    [FieldOffset(32)]
+    public ResourceHandle Sampler;
 }

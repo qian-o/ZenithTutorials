@@ -3,18 +3,19 @@ using ZenithTutorials.Renderers;
 
 (string Name, Action Run)[] tutorials =
 [
+    ("Project Setup",    App.Run<ClearRenderer>),
     ("Hello Triangle",   App.Run<HelloTriangleRenderer>),
     ("Textured Quad",    App.Run<TexturedQuadRenderer>),
     ("Spinning Cube",    App.Run<SpinningCubeRenderer>),
-    ("Compute Shader",   App.Run<ComputeShaderRenderer>),
+    ("Image Processing", App.Run<ComputeShaderRenderer>),
     ("Indirect Drawing", App.Run<IndirectDrawingRenderer>),
     ("Ray Tracing",      App.Run<RayTracingRenderer>),
     ("Mesh Shading",     App.Run<MeshShadingRenderer>)
 ];
 
-for (int i = 0; i < tutorials.Length; i++)
+for (int index = 0; index < tutorials.Length; index++)
 {
-    Console.WriteLine($"{i + 1}. {tutorials[i].Name}");
+    Console.WriteLine($"{index + 1}. {tutorials[index].Name}");
 }
 
 Console.Write("Select a tutorial to run: ");

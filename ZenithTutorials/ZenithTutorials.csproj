@@ -9,13 +9,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Silk.NET.Input" Version="2.23.0" />
         <PackageReference Include="Silk.NET.Windowing" Version="2.23.0" />
-        <PackageReference Include="Zenith.NET.DirectX12" Version="0.0.8" />
-        <PackageReference Include="Zenith.NET.Extensions.ImageSharp" Version="0.0.8" />
-        <PackageReference Include="Zenith.NET.Extensions.Slang" Version="0.0.8" />
-        <PackageReference Include="Zenith.NET.Metal" Version="0.0.8" />
-        <PackageReference Include="Zenith.NET.Vulkan" Version="0.0.8" />
+        <ProjectReference Include="..\..\Zenith.NET\sources\Extensions\Zenith.NET.Extensions.ImageSharp\Zenith.NET.Extensions.ImageSharp.csproj" />
+        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.DirectX12\Zenith.NET.DirectX12.csproj" />
+        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.Metal\Zenith.NET.Metal.csproj" />
+        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.Vulkan\Zenith.NET.Vulkan.csproj" />
     </ItemGroup>
 
     <ItemGroup>

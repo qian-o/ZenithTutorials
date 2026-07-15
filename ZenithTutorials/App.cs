@@ -1,4 +1,4 @@
-﻿using Silk.NET.Windowing;
+using Silk.NET.Windowing;
 using Zenith.NET.DirectX12;
 using Zenith.NET.Metal;
 using Zenith.NET.Vulkan;
@@ -14,7 +14,7 @@ internal static class App
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
         {
-            throw new PlatformNotSupportedException("This application only supports Windows, macOS, and Linux.");
+            throw new PlatformNotSupportedException("The tutorials support Windows, macOS, and Linux.");
         }
 
         if (OperatingSystem.IsWindows())
@@ -30,14 +30,15 @@ internal static class App
             Context = GraphicsContext.CreateVulkan(useValidationLayer: true);
         }
 
-        Context.ValidationMessage += static (sender, args) => Console.WriteLine($"[{args.Source} - {args.Severity}] {args.Message}");
+        Context.ValidationMessage += static (_, args) => Console.WriteLine($"[{args.Severity}] {args.Message}");
 
         window = Window.Create(WindowOptions.Default with
         {
             API = GraphicsAPI.None,
-            Title = "Zenith Tutorials",
+            Title = "Zenith.NET Tutorials",
             Size = new(1280, 720)
         });
+
         window.Initialize();
         window.Center();
 
@@ -55,16 +56,25 @@ internal static class App
             surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
         }
 
-        swapChain = Context.CreateSwapChain(new() { Surface = surface, ColorTargetFormat = PixelFormat.B8G8R8A8UNorm, DepthStencilTargetFormat = PixelFormat.D32FloatS8UInt });
+        swapChain = Context.CreateSwapChain(new()
+        {
+            Surface = surface,
+            Format = PixelFormat.B8G8R8A8UNorm
+        });
     }
 
     public static GraphicsContext Context { get; }
+
+    public static PixelFormat ColorFormat => swapChain.Desc.Format;
 
     public static uint Width => (uint)window.FramebufferSize.X;
 
     public static uint Height => (uint)window.FramebufferSize.Y;
 
-    public static FrameBuffer FrameBuffer => swapChain.FrameBuffer;
+    public static string ShaderPath(string file)
+    {
+        return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
+    }
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
@@ -82,18 +92,24 @@ internal static class App
                 renderer.Update(delta);
             };
 
-            window.Render += delta =>
+            window.Render += _ =>
             {
                 if (Width is 0 || Height is 0)
                 {
                     return;
                 }
 
-                renderer.Render();
+                Texture drawable = swapChain.Drawable;
+                CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
+
+                renderer.Render(commandBuffer, drawable);
+                commandBuffer.Transition(drawable, default, TextureLayout.Present);
+                commandBuffer.Submit().Wait();
+
                 swapChain.Present();
             };
 
-            window.Resize += size =>
+            window.Resize += _ =>
             {
                 if (Width is 0 || Height is 0)
                 {
@@ -110,7 +126,6 @@ internal static class App
         {
             swapChain.Dispose();
             window.Dispose();
-
             Context.Dispose();
         }
     }

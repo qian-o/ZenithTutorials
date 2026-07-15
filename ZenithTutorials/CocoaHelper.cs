@@ -1,4 +1,4 @@
-﻿namespace ZenithTutorials;
+namespace ZenithTutorials;
 
 internal static partial class CocoaHelper
 {
@@ -14,15 +14,14 @@ internal static partial class CocoaHelper
     private static partial nint Send(nint receiver, nint selector);
 
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
-    private static partial nint Send(nint receiver, nint selector, [MarshalAs(UnmanagedType.I1)] bool arg);
+    private static partial nint Send(nint receiver, nint selector, [MarshalAs(UnmanagedType.I1)] bool value);
 
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
-    private static partial nint Send(nint receiver, nint selector, nint arg);
+    private static partial nint Send(nint receiver, nint selector, nint value);
 
     public static nint CreateLayer(nint cocoa)
     {
         nint layer = Send(GetClass("CAMetalLayer"), Selector("layer"));
-        Send(layer, Selector("retain"));
 
         nint view = Send(cocoa, Selector("contentView"));
         Send(view, Selector("setWantsLayer:"), true);

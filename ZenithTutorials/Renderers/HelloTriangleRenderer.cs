@@ -1,37 +1,7 @@
-﻿namespace ZenithTutorials.Renderers;
+namespace ZenithTutorials.Renderers;
 
-internal unsafe class HelloTriangleRenderer : IRenderer
+internal unsafe sealed class HelloTriangleRenderer : IRenderer
 {
-    private const string ShaderSource = """
-        struct VSInput
-        {
-            float3 Position : POSITION0;
-
-            float4 Color : COLOR0;
-        };
-
-        struct PSInput
-        {
-            float4 Position : SV_POSITION;
-
-            float4 Color : COLOR;
-        };
-
-        PSInput VSMain(VSInput input)
-        {
-            PSInput output;
-            output.Position = float4(input.Position, 1.0);
-            output.Color = input.Color;
-
-            return output;
-        }
-
-        float4 PSMain(PSInput input) : SV_TARGET
-        {
-            return input.Color;
-        }
-        """;
-
     private readonly Buffer vertexBuffer;
     private readonly GraphicsPipeline pipeline;
 
@@ -39,40 +9,46 @@ internal unsafe class HelloTriangleRenderer : IRenderer
     {
         Vertex[] vertices =
         [
-            new(new( 0.0f,  0.5f, 0.0f), new(1.0f, 0.0f, 0.0f, 1.0f)),
-            new(new( 0.5f, -0.5f, 0.0f), new(0.0f, 1.0f, 0.0f, 1.0f)),
-            new(new(-0.5f, -0.5f, 0.0f), new(0.0f, 0.0f, 1.0f, 1.0f)),
+            new(new(0.0f, 0.6f, 0.0f), new(1.0f, 0.2f, 0.15f, 1.0f)),
+            new(new(0.6f, -0.5f, 0.0f), new(0.15f, 0.85f, 0.35f, 1.0f)),
+            new(new(-0.6f, -0.5f, 0.0f), new(0.2f, 0.45f, 1.0f, 1.0f))
         ];
 
-        vertexBuffer = App.Context.CreateBuffer(new()
+        vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
+
+        fixed (Vertex* pointer = vertices)
         {
-            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
-            StrideInBytes = (uint)sizeof(Vertex),
-            Flags = BufferUsageFlags.Vertex | BufferUsageFlags.MapWrite
-        });
-        vertexBuffer.Upload(vertices, 0);
+            vertexBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
+            });
+        }
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
 
-        using Shader vertexShader = App.Context.LoadShaderFromSource(ShaderSource, "VSMain", ShaderStageFlags.Vertex);
-        using Shader pixelShader = App.Context.LoadShaderFromSource(ShaderSource, "PSMain", ShaderStageFlags.Pixel);
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("HelloTriangle.slang"), "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("HelloTriangle.slang"), "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
-            RenderStates = new()
-            {
-                RasterizerState = RasterizerStates.CullNone,
-                DepthStencilState = DepthStencilStates.Default,
-                BlendState = BlendStates.Opaque
-            },
-            Vertex = vertexShader,
-            Pixel = pixelShader,
-            ResourceLayout = null,
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
             InputLayouts = [inputLayout],
             PrimitiveTopology = PrimitiveTopology.TriangleList,
-            Output = App.FrameBuffer.Output
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullNone(),
+                DepthStencil = DepthStencilState.DepthNone(),
+                Blend = BlendState.Opaque()
+            }
         });
     }
 
@@ -80,25 +56,16 @@ internal unsafe class HelloTriangleRenderer : IRenderer
     {
     }
 
-    public void Render()
+    public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        CommandBuffer commandBuffer = App.Context.Graphics.CommandBuffer();
-
-        commandBuffer.BeginRenderPass(App.FrameBuffer, new()
-        {
-            ColorValues = [new(0.1f, 0.1f, 0.1f, 1.0f)],
-            Depth = 1.0f,
-            Stencil = 0,
-            Flags = ClearFlags.All
-        });
+        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();
-
-        commandBuffer.Submit(waitForCompletion: true);
     }
 
     public void Resize(uint width, uint height)
