@@ -13,6 +13,7 @@ internal static class ScreenCapture
 
         fixed (byte* pointer = pixels)
         {
+            commandBuffer.Transition(texture, default, TextureLayout.ColorAttachment, TextureLayout.CopySrc);
             commandBuffer.Download(texture, default, default, new() { Width = width, Height = height, Depth = 1 }, new()
             {
                 Pointer = (nint)pointer,

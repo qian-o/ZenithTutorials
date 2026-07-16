@@ -110,7 +110,7 @@ internal static class App
                 CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
 
                 renderer.Render(commandBuffer, drawable);
-                commandBuffer.Transition(drawable, default, TextureLayout.Present);
+                commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment, TextureLayout.Present);
                 commandBuffer.Submit().Wait();
 
                 swapChain.Present();

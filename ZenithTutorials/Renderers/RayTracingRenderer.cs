@@ -154,13 +154,13 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         };
         constantBuffer.Upload(0, new() { Pointer = (nint)(&constants), SizeInBytes = (uint)sizeof(RayTracingConstants) });
 
-        commandBuffer.Transition(outputTexture, default, TextureLayout.Storage);
+        commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
         commandBuffer.SetPipeline(rayTracingPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
         commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize, (App.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
 
-        commandBuffer.Transition(outputTexture, default, TextureLayout.Sampled);
-        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
+        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.BeginRenderPass([ColorAttachment.DontCare(drawable)], null);
         commandBuffer.SetPipeline(displayPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);

@@ -100,12 +100,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        for (uint mipLevel = 0; mipLevel < texture.Desc.MipLevels; mipLevel++)
-        {
-            commandBuffer.Transition(texture, new() { MipLevel = mipLevel }, TextureLayout.Sampled);
-        }
-
-        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);

@@ -88,12 +88,11 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
     {
         if (!processed)
         {
-            commandBuffer.Transition(inputTexture, default, TextureLayout.Sampled);
-            commandBuffer.Transition(outputTexture, default, TextureLayout.Storage);
+            commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
             commandBuffer.SetPipeline(computePipeline);
             commandBuffer.SetConstantBuffer(constantBuffer, 0);
             commandBuffer.Dispatch((inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize, (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
-            commandBuffer.Transition(outputTexture, default, TextureLayout.Sampled);
+            commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
             processed = true;
         }
 
@@ -102,7 +101,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         int x = (int)((App.Width - width) / 2);
         int y = (int)((App.Height - height) / 2);
 
-        commandBuffer.Transition(drawable, default, TextureLayout.ColorAttachment);
+        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
         commandBuffer.SetViewports([new() { X = x, Y = y, Width = width, Height = height, MaxDepth = 1.0f }]);
         commandBuffer.SetScissors([new() { X = x, Y = y, Width = width, Height = height }]);
