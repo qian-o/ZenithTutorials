@@ -109,8 +109,18 @@ float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection, bo
 
     float NdotL = max(dot(normal, LightDir), 0.0);
     float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-    shadow = softShadow ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0)) :
-                          (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
+    if (softShadow)
+    {
+        shadow = lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0));
+    }
+    else if (TraceShadowRay(shadowOrigin, LightDir))
+    {
+        shadow = ShadowMin;
+    }
+    else
+    {
+        shadow = 1.0;
+    }
 
     float3 litColor = baseColor * AmbientColor + baseColor * LightColor * NdotL * shadow;
 
@@ -140,8 +150,19 @@ float3 ShadeSphere(float3 hitPoint, float3 normal, float3 sphereColor, float3 vi
     float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
 
     float3 shadowOrigin = hitPoint + normal * RayEpsilon;
-    float shadow = softShadow ? lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0)) :
-                                 (TraceShadowRay(shadowOrigin, LightDir) ? ShadowMin : 1.0);
+    float shadow;
+    if (softShadow)
+    {
+        shadow = lerp(ShadowMin, 1.0, TraceSoftShadow(shadowOrigin, LightDir, hitPoint.xz * 100.0));
+    }
+    else if (TraceShadowRay(shadowOrigin, LightDir))
+    {
+        shadow = ShadowMin;
+    }
+    else
+    {
+        shadow = 1.0;
+    }
 
     float3 diffuse = sphereColor * LightColor * NdotL * shadow;
     float3 specular = LightColor * spec * shadow;
@@ -347,7 +368,12 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
     float3 directColor = ShadeSphere(hitPoint, normal, sphereColor, viewDir, true);
 
     float3 reflectDir = reflect(rayDir, normal);
-    float3 reflectColor = TraceRoughReflection(hitPoint + normal * RayEpsilon, reflectDir, normal, SphereRoughness, hitPoint.xz * 100.0);
+    float3 reflectColor = TraceRoughReflection(
+        hitPoint + normal * RayEpsilon,
+        reflectDir,
+        normal,
+        SphereRoughness,
+        hitPoint.xz * 100.0);
     float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), SphereF0);
 
     return lerp(directColor, reflectColor, fresnel);

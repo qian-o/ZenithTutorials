@@ -16,14 +16,46 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     {
         Vertex[] vertices =
         [
-            new() { Position = new(-0.5f, -0.5f, 0.5f), Color = new(1.0f, 0.0f, 0.0f, 1.0f) },
-            new() { Position = new(0.5f, -0.5f, 0.5f), Color = new(0.0f, 1.0f, 0.0f, 1.0f) },
-            new() { Position = new(0.5f, 0.5f, 0.5f), Color = new(0.0f, 0.0f, 1.0f, 1.0f) },
-            new() { Position = new(-0.5f, 0.5f, 0.5f), Color = new(1.0f, 1.0f, 0.0f, 1.0f) },
-            new() { Position = new(-0.5f, -0.5f, -0.5f), Color = new(1.0f, 0.0f, 1.0f, 1.0f) },
-            new() { Position = new(0.5f, -0.5f, -0.5f), Color = new(0.0f, 1.0f, 1.0f, 1.0f) },
-            new() { Position = new(0.5f, 0.5f, -0.5f), Color = new(1.0f, 1.0f, 1.0f, 1.0f) },
-            new() { Position = new(-0.5f, 0.5f, -0.5f), Color = new(0.5f, 0.5f, 0.5f, 1.0f) }
+            new()
+            {
+                Position = new(-0.5f, -0.5f, 0.5f),
+                Color = new(1.0f, 0.0f, 0.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, -0.5f, 0.5f),
+                Color = new(0.0f, 1.0f, 0.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, 0.5f, 0.5f),
+                Color = new(0.0f, 0.0f, 1.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(-0.5f, 0.5f, 0.5f),
+                Color = new(1.0f, 1.0f, 0.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(-0.5f, -0.5f, -0.5f),
+                Color = new(1.0f, 0.0f, 1.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, -0.5f, -0.5f),
+                Color = new(0.0f, 1.0f, 1.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, 0.5f, -0.5f),
+                Color = new(1.0f, 1.0f, 1.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(-0.5f, 0.5f, -0.5f),
+                Color = new(0.5f, 0.5f, 0.5f, 1.0f)
+            }
         ];
 
         uint[] indices =
@@ -68,11 +100,25 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         depthTexture = CreateDepthTexture(App.Width, App.Height);
 
         InputLayout inputLayout = new();
-        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
-        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float3,
+            Semantic = ElementSemantic.Position
+        });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float4,
+            Semantic = ElementSemantic.Color
+        });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("SpinningCube.slang"), "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("SpinningCube.slang"), "FSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("SpinningCube.slang"),
+            "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("SpinningCube.slang"),
+            "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -101,9 +147,14 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     {
         rotationAngle += (float)deltaTime;
 
-        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) * Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
+        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) *
+                          Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
         Matrix4x4 view = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 3.0f), Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
+        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(
+            float.DegreesToRadians(45.0f),
+            (float)App.Width / App.Height,
+            0.1f,
+            100.0f);
 
         Constants constants = new()
         {
@@ -124,7 +175,9 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
 
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass(
+            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+            DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);

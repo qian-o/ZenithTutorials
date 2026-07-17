@@ -40,9 +40,24 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         Sphere[] spheres =
         [
-            new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
-            new() { Center = new(2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
-            new() { Center = new(0.0f, 0.6f, -3.0f), Radius = 0.6f, Color = new(0.9f, 0.7f, 0.2f) }
+            new()
+            {
+                Center = new(-2.0f, 1.0f, 1.0f),
+                Radius = 1.0f,
+                Color = new(0.8f, 0.2f, 0.2f)
+            },
+            new()
+            {
+                Center = new(2.0f, 1.2f, -1.0f),
+                Radius = 1.2f,
+                Color = new(0.2f, 0.4f, 0.8f)
+            },
+            new()
+            {
+                Center = new(0.0f, 0.6f, -3.0f),
+                Radius = 0.6f,
+                Color = new(0.9f, 0.7f, 0.2f)
+            }
         ];
 
         Vector3[] aabbs = new Vector3[spheres.Length * 2];
@@ -63,9 +78,18 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         });
         sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
 
-        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("RayTracing.slang"), "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("RayTracing.slang"), "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("RayTracing.slang"), "FSMain"));
+        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("RayTracing.slang"),
+            "CSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("RayTracing.slang"),
+            "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("RayTracing.slang"),
+            "FSMain"));
 
         rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
@@ -125,8 +149,20 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         {
             Instances =
             [
-                new() { AccelerationStructure = floorBlas, InstanceId = 0, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity },
-                new() { AccelerationStructure = sphereBlas, InstanceId = 1, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity }
+                new()
+                {
+                    AccelerationStructure = floorBlas,
+                    InstanceId = 0,
+                    VisibilityMask = 0xFF,
+                    Transform = Matrix4x4.Identity
+                },
+                new()
+                {
+                    AccelerationStructure = sphereBlas,
+                    InstanceId = 1,
+                    VisibilityMask = 0xFF,
+                    Transform = Matrix4x4.Identity
+                }
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         });
@@ -145,21 +181,31 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         float angle = totalTime * 0.3f;
         RayTracingConstants constants = new()
         {
-            Position = new(12.0f * MathF.Sin(angle), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(angle)),
+            Position = new(
+                12.0f * MathF.Sin(angle),
+                4.0f + MathF.Sin(totalTime * 0.2f),
+                -12.0f * MathF.Cos(angle)),
             Scene = tlas.Handle,
             Spheres = sphereBuffer.StorageReadOnlyHandle,
             OutputTexture = outputTexture.StorageHandle,
             Image = outputTexture.SampledHandle,
             Sampler = sampler.Handle
         };
-        constantBuffer.Upload(0, new() { Pointer = (nint)(&constants), SizeInBytes = (uint)sizeof(RayTracingConstants) });
+        constantBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&constants),
+            SizeInBytes = (uint)sizeof(RayTracingConstants)
+        });
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
 
         commandBuffer.SetPipeline(rayTracingPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
 
-        commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize, (App.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
+        commandBuffer.Dispatch(
+            (App.Width + ThreadGroupSize - 1) / ThreadGroupSize,
+            (App.Height + ThreadGroupSize - 1) / ThreadGroupSize,
+            1);
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
@@ -209,7 +255,11 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         });
         fixed (T* pointer = data)
         {
-            buffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(T) * data.Length) });
+            buffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(T) * data.Length)
+            });
         }
         return buffer;
     }
@@ -234,18 +284,34 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct RayTracingConstants
 {
-    [FieldOffset(0)] public Vector3 Position;
-    [FieldOffset(16)] public ResourceHandle Scene;
-    [FieldOffset(24)] public ResourceHandle Spheres;
-    [FieldOffset(32)] public ResourceHandle OutputTexture;
-    [FieldOffset(40)] public ResourceHandle Image;
-    [FieldOffset(48)] public ResourceHandle Sampler;
+    [FieldOffset(0)]
+    public Vector3 Position;
+
+    [FieldOffset(16)]
+    public ResourceHandle Scene;
+
+    [FieldOffset(24)]
+    public ResourceHandle Spheres;
+
+    [FieldOffset(32)]
+    public ResourceHandle OutputTexture;
+
+    [FieldOffset(40)]
+    public ResourceHandle Image;
+
+    [FieldOffset(48)]
+    public ResourceHandle Sampler;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 32)]
 file struct Sphere
 {
-    [FieldOffset(0)] public Vector3 Center;
-    [FieldOffset(12)] public float Radius;
-    [FieldOffset(16)] public Vector3 Color;
+    [FieldOffset(0)]
+    public Vector3 Center;
+
+    [FieldOffset(12)]
+    public float Radius;
+
+    [FieldOffset(16)]
+    public Vector3 Color;
 }

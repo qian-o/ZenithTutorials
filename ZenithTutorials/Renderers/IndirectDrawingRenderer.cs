@@ -49,17 +49,29 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
         fixed (Vertex* pointer = vertices)
         {
-            vertexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length) });
+            vertexBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
+            });
         }
 
         indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
         fixed (uint* pointer = indices)
         {
-            indexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(uint) * indices.Length) });
+            indexBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(uint) * indices.Length)
+            });
         }
 
         indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
-        indirectBuffer.Upload(0, new() { Pointer = (nint)(&arguments), SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs) });
+        indirectBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&arguments),
+            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs)
+        });
 
         instanceBuffer = App.Context.CreateBuffer(new()
         {
@@ -79,11 +91,25 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         depthTexture = CreateDepthTexture(App.Width, App.Height);
 
         InputLayout inputLayout = new();
-        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
-        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float3,
+            Semantic = ElementSemantic.Position
+        });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float4,
+            Semantic = ElementSemantic.Color
+        });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("IndirectDrawing.slang"), "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("IndirectDrawing.slang"), "FSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("IndirectDrawing.slang"),
+            "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("IndirectDrawing.slang"),
+            "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -125,14 +151,21 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
             instances[index] = new()
             {
-                Model = Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateRotationY(rotation) * Matrix4x4.CreateRotationX(rotation * 0.5f) * Matrix4x4.CreateTranslation(offsetX, offsetY, 0.0f),
+                Model = Matrix4x4.CreateScale(0.4f) *
+                        Matrix4x4.CreateRotationY(rotation) *
+                        Matrix4x4.CreateRotationX(rotation * 0.5f) *
+                        Matrix4x4.CreateTranslation(offsetX, offsetY, 0.0f),
                 Color = new((float)x / GridWidth, (float)y / GridWidth, 1.0f - ((float)x / GridWidth), 1.0f)
             };
         }
 
         fixed (InstanceData* pointer = instances)
         {
-            instanceBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(InstanceData) * instances.Length) });
+            instanceBuffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(InstanceData) * instances.Length)
+            });
         }
     }
 
@@ -141,7 +174,9 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
 
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass(
+            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+            DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
@@ -161,11 +196,19 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         IndirectConstants constants = new()
         {
             View = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 8.0f), Vector3.Zero, Vector3.UnitY),
-            Projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)width / height, 0.1f, 100.0f),
+            Projection = Matrix4x4.CreatePerspectiveFieldOfView(
+                float.DegreesToRadians(45.0f),
+                (float)width / height,
+                0.1f,
+                100.0f),
             Instances = instanceBuffer.StorageReadOnlyHandle
         };
 
-        constantBuffer.Upload(0, new() { Pointer = (nint)(&constants), SizeInBytes = (uint)sizeof(IndirectConstants) });
+        constantBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&constants),
+            SizeInBytes = (uint)sizeof(IndirectConstants)
+        });
     }
 
     public void Dispose()
@@ -181,7 +224,8 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     private static Texture CreateDepthTexture(uint width, uint height)
     {
-        return App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, width, height, SampleCount.Count1));
+        return App.Context.CreateTexture(
+            TextureDesc.DepthStencilAttachment(DepthFormat, width, height, SampleCount.Count1));
     }
 }
 

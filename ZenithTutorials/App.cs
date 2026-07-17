@@ -37,7 +37,6 @@ internal static class App
         }
 
         Context.ValidationMessage += static (_, args) => Console.WriteLine($"[{args.Severity}] {args.Message}");
-
     }
 
     public static GraphicsContext Context { get; }
@@ -77,7 +76,11 @@ internal static class App
         }
         else
         {
-            surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
+            surface = Surface.Xlib(
+                window.Native!.X11!.Value.Display,
+                (nint)window.Native.X11.Value.Window,
+                Width,
+                Height);
         }
 
         swapChain = Context.CreateSwapChain(new()

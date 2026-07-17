@@ -186,7 +186,7 @@ void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in p
 }
 
 [shader("fragment")]
-float4 PSMain(VertexOutput input) : SV_TARGET
+float4 FSMain(VertexOutput input) : SV_TARGET
 {
     float3 lightDir = normalize(constants.LightDirection);
     float3 normal = normalize(input.WorldNormal);

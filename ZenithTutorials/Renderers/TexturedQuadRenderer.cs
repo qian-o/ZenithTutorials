@@ -13,10 +13,26 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     {
         Vertex[] vertices =
         [
-            new() { Position = new(-0.5f, 0.5f, 0.0f), TexCoord = new(0.0f, 0.0f) },
-            new() { Position = new(0.5f, 0.5f, 0.0f), TexCoord = new(1.0f, 0.0f) },
-            new() { Position = new(0.5f, -0.5f, 0.0f), TexCoord = new(1.0f, 1.0f) },
-            new() { Position = new(-0.5f, -0.5f, 0.0f), TexCoord = new(0.0f, 1.0f) }
+            new()
+            {
+                Position = new(-0.5f, 0.5f, 0.0f),
+                TexCoord = new(0.0f, 0.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, 0.5f, 0.0f),
+                TexCoord = new(1.0f, 0.0f)
+            },
+            new()
+            {
+                Position = new(0.5f, -0.5f, 0.0f),
+                TexCoord = new(1.0f, 1.0f)
+            },
+            new()
+            {
+                Position = new(-0.5f, -0.5f, 0.0f),
+                TexCoord = new(0.0f, 1.0f)
+            }
         ];
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
@@ -43,8 +59,9 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             });
         }
 
-        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
-        texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
+        texture = App.Context.LoadTextureFromFile(
+            Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png"),
+            generateMipMaps: true);
         sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
 
         constantBuffer = App.Context.CreateBuffer(new()
@@ -67,11 +84,25 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         });
 
         InputLayout inputLayout = new();
-        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
-        inputLayout.Add(new() { Format = ElementFormat.Float2, Semantic = ElementSemantic.TexCoord });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float3,
+            Semantic = ElementSemantic.Position
+        });
+        inputLayout.Add(new()
+        {
+            Format = ElementFormat.Float2,
+            Semantic = ElementSemantic.TexCoord
+        });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("TexturedQuad.slang"), "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("TexturedQuad.slang"), "FSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("TexturedQuad.slang"),
+            "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("TexturedQuad.slang"),
+            "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -101,7 +132,9 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
+        commandBuffer.BeginRenderPass(
+            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+            null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);

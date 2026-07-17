@@ -31,7 +31,11 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         List<Vertex> sphereVertices = [];
         List<Triangle> sphereTriangles = [];
 
-        sphereVertices.Add(new() { Position = new(0.0f, radius, 0.0f), Normal = Vector3.UnitY });
+        sphereVertices.Add(new()
+        {
+            Position = new(0.0f, radius, 0.0f),
+            Normal = Vector3.UnitY
+        });
 
         for (int latitude = 1; latitude < latitudeSegments; latitude++)
         {
@@ -42,17 +46,33 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             for (int longitude = 0; longitude < longitudeSegments; longitude++)
             {
                 float theta = 2.0f * MathF.PI * longitude / longitudeSegments;
-                Vector3 normal = new(sinPhi * MathF.Cos(theta), cosPhi, sinPhi * MathF.Sin(theta));
-                sphereVertices.Add(new() { Position = normal * radius, Normal = normal });
+                Vector3 normal = new(
+                    sinPhi * MathF.Cos(theta),
+                    cosPhi,
+                    sinPhi * MathF.Sin(theta));
+                sphereVertices.Add(new()
+                {
+                    Position = normal * radius,
+                    Normal = normal
+                });
             }
         }
 
-        sphereVertices.Add(new() { Position = new(0.0f, -radius, 0.0f), Normal = -Vector3.UnitY });
+        sphereVertices.Add(new()
+        {
+            Position = new(0.0f, -radius, 0.0f),
+            Normal = -Vector3.UnitY
+        });
 
         for (int longitude = 0; longitude < longitudeSegments; longitude++)
         {
             uint next = (uint)((longitude + 1) % longitudeSegments);
-            sphereTriangles.Add(new() { Index0 = 0, Index1 = (uint)(1 + longitude), Index2 = 1 + next });
+            sphereTriangles.Add(new()
+            {
+                Index0 = 0,
+                Index1 = (uint)(1 + longitude),
+                Index2 = 1 + next
+            });
         }
 
         for (int latitude = 0; latitude < latitudeSegments - 2; latitude++)
@@ -64,8 +84,18 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
                 uint topRight = (uint)(1 + (latitude * longitudeSegments)) + next;
                 uint bottomLeft = (uint)(1 + ((latitude + 1) * longitudeSegments) + longitude);
                 uint bottomRight = (uint)(1 + ((latitude + 1) * longitudeSegments)) + next;
-                sphereTriangles.Add(new() { Index0 = topLeft, Index1 = bottomLeft, Index2 = topRight });
-                sphereTriangles.Add(new() { Index0 = topRight, Index1 = bottomLeft, Index2 = bottomRight });
+                sphereTriangles.Add(new()
+                {
+                    Index0 = topLeft,
+                    Index1 = bottomLeft,
+                    Index2 = topRight
+                });
+                sphereTriangles.Add(new()
+                {
+                    Index0 = topRight,
+                    Index1 = bottomLeft,
+                    Index2 = bottomRight
+                });
             }
         }
 
@@ -74,13 +104,16 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         for (int longitude = 0; longitude < longitudeSegments; longitude++)
         {
             uint next = (uint)((longitude + 1) % longitudeSegments);
-            sphereTriangles.Add(new() { Index0 = bottomPole, Index1 = lastRing + next, Index2 = lastRing + (uint)longitude });
+            sphereTriangles.Add(new()
+            {
+                Index0 = bottomPole,
+                Index1 = lastRing + next,
+                Index2 = lastRing + (uint)longitude
+            });
         }
 
-        Vertex[] vertices = [.. sphereVertices];
-        Triangle[] triangles = [.. sphereTriangles];
-        vertexBuffer = CreateStorageBuffer(vertices);
-        triangleBuffer = CreateStorageBuffer(triangles);
+        vertexBuffer = CreateStorageBuffer<Vertex>([.. sphereVertices]);
+        triangleBuffer = CreateStorageBuffer<Triangle>([.. sphereTriangles]);
 
         constantBuffer = App.Context.CreateBuffer(new()
         {
@@ -90,14 +123,33 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         });
         depthTexture = CreateDepthTexture(App.Width, App.Height);
 
-        ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("MeshShading.slang"), "ASMain");
-        taskDesc.ThreadGroupSize = new() { X = TaskGroupSize, Y = 1, Z = 1 };
-        ShaderDesc meshDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("MeshShading.slang"), "MSMain");
-        meshDesc.ThreadGroupSize = new() { X = MeshGroupSize, Y = 1, Z = 1 };
+        ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("MeshShading.slang"),
+            "ASMain");
+        taskDesc.ThreadGroupSize = new()
+        {
+            X = TaskGroupSize,
+            Y = 1,
+            Z = 1
+        };
+        ShaderDesc meshDesc = ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("MeshShading.slang"),
+            "MSMain");
+        meshDesc.ThreadGroupSize = new()
+        {
+            X = MeshGroupSize,
+            Y = 1,
+            Z = 1
+        };
 
         using Shader taskShader = App.Context.CreateShader(taskDesc);
         using Shader meshShader = App.Context.CreateShader(meshDesc);
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, App.ShaderPath("MeshShading.slang"), "PSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
+            App.Context.GraphicsApi,
+            App.ShaderPath("MeshShading.slang"),
+            "FSMain"));
 
         pipeline = App.Context.CreateMeshShadingPipeline(new()
         {
@@ -126,26 +178,61 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     {
         totalTime += (float)deltaTime;
         float angle = totalTime * 0.3f;
-        Vector3 cameraPosition = new(35.0f * MathF.Sin(angle), 20.0f * MathF.Sin(totalTime * 0.2f), 35.0f * MathF.Cos(angle));
+        Vector3 cameraPosition = new(
+            35.0f * MathF.Sin(angle),
+            20.0f * MathF.Sin(totalTime * 0.2f),
+            35.0f * MathF.Cos(angle));
         Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 200.0f);
+        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(
+            float.DegreesToRadians(45.0f),
+            (float)App.Width / App.Height,
+            0.1f,
+            200.0f);
         Matrix4x4 viewProjection = view * projection;
 
         MeshConstants constants = new()
         {
             ViewProjection = viewProjection,
-            FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14, viewProjection.M21 + viewProjection.M24, viewProjection.M31 + viewProjection.M34, viewProjection.M41 + viewProjection.M44)),
-            FrustumPlane1 = NormalizePlane(new(viewProjection.M14 - viewProjection.M11, viewProjection.M24 - viewProjection.M21, viewProjection.M34 - viewProjection.M31, viewProjection.M44 - viewProjection.M41)),
-            FrustumPlane2 = NormalizePlane(new(viewProjection.M12 + viewProjection.M14, viewProjection.M22 + viewProjection.M24, viewProjection.M32 + viewProjection.M34, viewProjection.M42 + viewProjection.M44)),
-            FrustumPlane3 = NormalizePlane(new(viewProjection.M14 - viewProjection.M12, viewProjection.M24 - viewProjection.M22, viewProjection.M34 - viewProjection.M32, viewProjection.M44 - viewProjection.M42)),
-            FrustumPlane4 = NormalizePlane(new(viewProjection.M13, viewProjection.M23, viewProjection.M33, viewProjection.M43)),
-            FrustumPlane5 = NormalizePlane(new(viewProjection.M14 - viewProjection.M13, viewProjection.M24 - viewProjection.M23, viewProjection.M34 - viewProjection.M33, viewProjection.M44 - viewProjection.M43)),
+            FrustumPlane0 = NormalizePlane(new(
+                viewProjection.M11 + viewProjection.M14,
+                viewProjection.M21 + viewProjection.M24,
+                viewProjection.M31 + viewProjection.M34,
+                viewProjection.M41 + viewProjection.M44)),
+            FrustumPlane1 = NormalizePlane(new(
+                viewProjection.M14 - viewProjection.M11,
+                viewProjection.M24 - viewProjection.M21,
+                viewProjection.M34 - viewProjection.M31,
+                viewProjection.M44 - viewProjection.M41)),
+            FrustumPlane2 = NormalizePlane(new(
+                viewProjection.M12 + viewProjection.M14,
+                viewProjection.M22 + viewProjection.M24,
+                viewProjection.M32 + viewProjection.M34,
+                viewProjection.M42 + viewProjection.M44)),
+            FrustumPlane3 = NormalizePlane(new(
+                viewProjection.M14 - viewProjection.M12,
+                viewProjection.M24 - viewProjection.M22,
+                viewProjection.M34 - viewProjection.M32,
+                viewProjection.M44 - viewProjection.M42)),
+            FrustumPlane4 = NormalizePlane(new(
+                viewProjection.M13,
+                viewProjection.M23,
+                viewProjection.M33,
+                viewProjection.M43)),
+            FrustumPlane5 = NormalizePlane(new(
+                viewProjection.M14 - viewProjection.M13,
+                viewProjection.M24 - viewProjection.M23,
+                viewProjection.M34 - viewProjection.M33,
+                viewProjection.M44 - viewProjection.M43)),
             Time = totalTime,
             LightDirection = -Vector3.Normalize(cameraPosition),
             Vertices = vertexBuffer.StorageReadOnlyHandle,
             Triangles = triangleBuffer.StorageReadOnlyHandle
         };
-        constantBuffer.Upload(0, new() { Pointer = (nint)(&constants), SizeInBytes = (uint)sizeof(MeshConstants) });
+        constantBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&constants),
+            SizeInBytes = (uint)sizeof(MeshConstants)
+        });
     }
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
@@ -153,7 +240,9 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
 
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass(
+            [ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))],
+            DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
@@ -189,14 +278,19 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         });
         fixed (T* pointer = data)
         {
-            buffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(T) * data.Length) });
+            buffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(T) * data.Length)
+            });
         }
         return buffer;
     }
 
     private static Texture CreateDepthTexture(uint width, uint height)
     {
-        return App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, width, height, SampleCount.Count1));
+        return App.Context.CreateTexture(
+            TextureDesc.DepthStencilAttachment(DepthFormat, width, height, SampleCount.Count1));
     }
 
     private static Vector4 NormalizePlane(Vector4 plane)
