@@ -220,7 +220,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             MipLevels = 1,
             ArrayLayers = 1,
             SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.Storage | TextureUsages.Sampled
+            Usages = TextureUsages.Sampled | TextureUsages.Storage
         });
     }
 }

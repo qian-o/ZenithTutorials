@@ -57,9 +57,9 @@ internal static class App
     {
         window = Window.Create(WindowOptions.Default with
         {
+            Size = new((int)CaptureWidth, (int)CaptureHeight),
             API = GraphicsAPI.None,
-            Title = "Zenith.NET Tutorials",
-            Size = new((int)CaptureWidth, (int)CaptureHeight)
+            Title = "Zenith.NET Tutorials"
         });
 
         window.Initialize();

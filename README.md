@@ -2,10 +2,10 @@
 
 Runnable source for the [Zenith.NET tutorials](https://qian-o.github.io/Zenith.NET/tutorials/).
 
-This repository is the source of truth for tutorial code. The documentation explains each workload and links here for complete, buildable C# and Slang sources.
+This repository contains the runnable tutorial code. The documentation explains each workload and links here for complete, buildable C# and Slang sources.
 
 > [!NOTE]
-> The project temporarily uses local `ProjectReference` items while the redesigned RHI is under development. These references will return to the published Zenith.NET NuGet packages when that release is available.
+> The project resolves Zenith.NET through local `ProjectReference` items. Keep the Zenith.NET and ZenithTutorials repositories in the same parent directory.
 
 ## Build and Run
 
@@ -18,6 +18,8 @@ dotnet run --project ZenithTutorials/ZenithTutorials.csproj
 
 Select a tutorial from the console menu. The shared application host creates the window, graphics context, swap chain, and command buffers; each renderer records one workload.
 
+The host uses DirectX 12 on Windows, Metal on macOS, and Vulkan on Linux. The Linux window path requires X11 or XWayland.
+
 ## Screenshots
 
 The documentation images are generated from the real renderers at 1280 by 720 pixels. Regenerate all seven results with:
@@ -27,6 +29,12 @@ dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture all --o
 ```
 
 Use a tutorial slug instead of `all` to capture one result, such as `--capture ray-tracing`.
+
+Capturing `all` requires a device that supports both Ray Tracing and Mesh Shading. The `--output` value is a directory for `all` and a file path for one tutorial:
+
+```shell
+dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture ray-tracing --output ZenithTutorials/Assets/Screenshots/ray-tracing.png
+```
 
 ## Tutorials
 
