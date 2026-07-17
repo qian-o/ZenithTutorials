@@ -1,4 +1,4 @@
-namespace ZenithTutorials.Renderers;
+﻿namespace ZenithTutorials.Renderers;
 
 internal unsafe sealed class HelloTriangleRenderer : IRenderer
 {
@@ -59,10 +59,12 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
+
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
+
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();

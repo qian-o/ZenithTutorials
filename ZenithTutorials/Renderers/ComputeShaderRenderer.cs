@@ -1,4 +1,4 @@
-namespace ZenithTutorials.Renderers;
+﻿namespace ZenithTutorials.Renderers;
 
 internal unsafe sealed class ComputeShaderRenderer : IRenderer
 {
@@ -15,8 +15,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
     public ComputeShaderRenderer()
     {
-        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
-        inputTexture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: false);
+        inputTexture = App.Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png"), false);
 
         outputTexture = App.Context.CreateTexture(new()
         {
@@ -32,6 +31,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         });
 
         sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+
         constantBuffer = App.Context.CreateBuffer(new()
         {
             SizeInBytes = (uint)sizeof(ComputeConstants),
@@ -89,10 +89,14 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         if (!processed)
         {
             commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
+
             commandBuffer.SetPipeline(computePipeline);
             commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
             commandBuffer.Dispatch((inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize, (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
+
             commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
+
             processed = true;
         }
 
@@ -102,12 +106,16 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         int y = (int)((App.Height - height) / 2);
 
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
+
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
+
+        commandBuffer.SetPipeline(displayPipeline);
         commandBuffer.SetViewports([new() { X = x, Y = y, Width = width, Height = height, MaxDepth = 1.0f }]);
         commandBuffer.SetScissors([new() { X = x, Y = y, Width = width, Height = height }]);
-        commandBuffer.SetPipeline(displayPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.Draw(3, 1, 0, 0);
+
         commandBuffer.EndRenderPass();
     }
 

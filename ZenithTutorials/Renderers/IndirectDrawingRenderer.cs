@@ -1,4 +1,4 @@
-namespace ZenithTutorials.Renderers;
+﻿namespace ZenithTutorials.Renderers;
 
 internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 {
@@ -40,6 +40,12 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             4, 5, 1, 4, 1, 0
         ];
 
+        IndirectDrawIndexedArgs arguments = new()
+        {
+            IndexCount = (uint)indices.Length,
+            InstanceCount = InstanceCount
+        };
+
         vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
         fixed (Vertex* pointer = vertices)
         {
@@ -53,14 +59,6 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         }
 
         indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
-        IndirectDrawIndexedArgs arguments = new()
-        {
-            IndexCount = (uint)indices.Length,
-            InstanceCount = InstanceCount,
-            FirstIndex = 0,
-            VertexOffset = 0,
-            FirstInstance = 0
-        };
         indirectBuffer.Upload(0, new() { Pointer = (nint)(&arguments), SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs) });
 
         instanceBuffer = App.Context.CreateBuffer(new()
@@ -114,6 +112,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
+
         InstanceData[] instances = new InstanceData[InstanceCount];
 
         for (uint index = 0; index < InstanceCount; index++)
@@ -141,12 +140,16 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.DrawIndexedIndirect(indirectBuffer, 0, 1);
+
         commandBuffer.EndRenderPass();
     }
 

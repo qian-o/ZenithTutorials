@@ -1,4 +1,4 @@
-namespace ZenithTutorials.Renderers;
+﻿namespace ZenithTutorials.Renderers;
 
 internal unsafe sealed class SpinningCubeRenderer : IRenderer
 {
@@ -130,6 +130,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();

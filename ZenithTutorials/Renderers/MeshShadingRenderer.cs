@@ -1,4 +1,4 @@
-namespace ZenithTutorials.Renderers;
+﻿namespace ZenithTutorials.Renderers;
 
 internal unsafe sealed class MeshShadingRenderer : IRenderer
 {
@@ -70,7 +70,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         }
 
         uint bottomPole = (uint)(sphereVertices.Count - 1);
-        uint lastRing = (uint)(1 + ((latitudeSegments - 2) * longitudeSegments));
+        uint lastRing = 1 + ((latitudeSegments - 2) * longitudeSegments);
         for (int longitude = 0; longitude < longitudeSegments; longitude++)
         {
             uint next = (uint)((longitude + 1) % longitudeSegments);
@@ -152,10 +152,13 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
         commandBuffer.DispatchMesh(DispatchGroupCount, 1, 1);
+
         commandBuffer.EndRenderPass();
     }
 
@@ -205,30 +208,59 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
 [StructLayout(LayoutKind.Explicit, Size = 32)]
 file struct Vertex
 {
-    [FieldOffset(0)] public Vector3 Position;
-    [FieldOffset(16)] public Vector3 Normal;
+    [FieldOffset(0)]
+    public Vector3 Position;
+
+    [FieldOffset(16)]
+    public Vector3 Normal;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 16)]
 file struct Triangle
 {
-    [FieldOffset(0)] public uint Index0;
-    [FieldOffset(4)] public uint Index1;
-    [FieldOffset(8)] public uint Index2;
+    [FieldOffset(0)]
+    public uint Index0;
+
+    [FieldOffset(4)]
+    public uint Index1;
+
+    [FieldOffset(8)]
+    public uint Index2;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct MeshConstants
 {
-    [FieldOffset(0)] public Matrix4x4 ViewProjection;
-    [FieldOffset(64)] public Vector4 FrustumPlane0;
-    [FieldOffset(80)] public Vector4 FrustumPlane1;
-    [FieldOffset(96)] public Vector4 FrustumPlane2;
-    [FieldOffset(112)] public Vector4 FrustumPlane3;
-    [FieldOffset(128)] public Vector4 FrustumPlane4;
-    [FieldOffset(144)] public Vector4 FrustumPlane5;
-    [FieldOffset(160)] public float Time;
-    [FieldOffset(164)] public Vector3 LightDirection;
-    [FieldOffset(176)] public ResourceHandle Vertices;
-    [FieldOffset(184)] public ResourceHandle Triangles;
+    [FieldOffset(0)]
+    public Matrix4x4 ViewProjection;
+
+    [FieldOffset(64)]
+    public Vector4 FrustumPlane0;
+
+    [FieldOffset(80)]
+    public Vector4 FrustumPlane1;
+
+    [FieldOffset(96)]
+    public Vector4 FrustumPlane2;
+
+    [FieldOffset(112)]
+    public Vector4 FrustumPlane3;
+
+    [FieldOffset(128)]
+    public Vector4 FrustumPlane4;
+
+    [FieldOffset(144)]
+    public Vector4 FrustumPlane5;
+
+    [FieldOffset(160)]
+    public float Time;
+
+    [FieldOffset(164)]
+    public Vector3 LightDirection;
+
+    [FieldOffset(176)]
+    public ResourceHandle Vertices;
+
+    [FieldOffset(184)]
+    public ResourceHandle Triangles;
 }
