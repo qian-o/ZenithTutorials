@@ -15,9 +15,8 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
     public ComputeShaderRenderer()
     {
-        inputTexture = App.Context.LoadTextureFromFile(
-            Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png"),
-            false);
+        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
+        inputTexture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: false);
 
         outputTexture = App.Context.CreateTexture(new()
         {
@@ -57,18 +56,14 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             SizeInBytes = (uint)sizeof(ComputeConstants)
         });
 
-        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("ComputeShader.slang"),
-            "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("ComputeShader.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("ComputeShader.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("ComputeShader.slang");
+        ShaderDesc computeDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader computeShader = App.Context.CreateShader(computeDesc);
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         computePipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
@@ -103,11 +98,9 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
             commandBuffer.SetPipeline(computePipeline);
             commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
-            commandBuffer.Dispatch(
-                (inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize,
-                (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize,
-                1);
+            commandBuffer.Dispatch((inputTexture.Desc.Width + ThreadGroupSize - 1) / ThreadGroupSize,
+                                   (inputTexture.Desc.Height + ThreadGroupSize - 1) / ThreadGroupSize,
+                                   1);
 
             commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
 
@@ -121,9 +114,8 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
 
-        commandBuffer.BeginRenderPass(
-            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
-            null);
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+                                      null);
 
         commandBuffer.SetPipeline(displayPipeline);
         commandBuffer.SetViewports([new()
@@ -142,7 +134,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             Height = height
         }]);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();

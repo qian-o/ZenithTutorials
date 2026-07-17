@@ -89,7 +89,6 @@ void DecomposeInstanceID(uint id, out uint x, out uint y, out uint z)
     z = id / (GridSize * GridSize);
 }
 
-
 float3 InstancePosition(uint id)
 {
     uint x, y, z;

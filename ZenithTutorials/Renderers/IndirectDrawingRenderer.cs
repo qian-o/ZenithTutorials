@@ -91,6 +91,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         depthTexture = CreateDepthTexture(App.Width, App.Height);
 
         InputLayout inputLayout = new();
+
         inputLayout.Add(new()
         {
             Format = ElementFormat.Float3,
@@ -102,14 +103,12 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             Semantic = ElementSemantic.Color
         });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("IndirectDrawing.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("IndirectDrawing.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("IndirectDrawing.slang");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -174,15 +173,13 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
 
-        commandBuffer.BeginRenderPass(
-            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
-            DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+                                      DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
         commandBuffer.DrawIndexedIndirect(indirectBuffer, 0, 1);
 
         commandBuffer.EndRenderPass();
@@ -196,11 +193,10 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         IndirectConstants constants = new()
         {
             View = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 8.0f), Vector3.Zero, Vector3.UnitY),
-            Projection = Matrix4x4.CreatePerspectiveFieldOfView(
-                float.DegreesToRadians(45.0f),
-                (float)width / height,
-                0.1f,
-                100.0f),
+            Projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f),
+                                                                (float)width / height,
+                                                                0.1f,
+                                                                100.0f),
             Instances = instanceBuffer.StorageReadOnlyHandle
         };
 
@@ -224,8 +220,10 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     private static Texture CreateDepthTexture(uint width, uint height)
     {
-        return App.Context.CreateTexture(
-            TextureDesc.DepthStencilAttachment(DepthFormat, width, height, SampleCount.Count1));
+        return App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat,
+                                                                            width,
+                                                                            height,
+                                                                            SampleCount.Count1));
     }
 }
 

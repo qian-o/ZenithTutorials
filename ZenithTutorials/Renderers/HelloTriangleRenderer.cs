@@ -26,6 +26,7 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         }
 
         InputLayout inputLayout = new();
+
         inputLayout.Add(new()
         {
             Format = ElementFormat.Float3,
@@ -37,14 +38,12 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
             Semantic = ElementSemantic.Color
         });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("HelloTriangle.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("HelloTriangle.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("HelloTriangle.slang");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -78,7 +77,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
-
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();

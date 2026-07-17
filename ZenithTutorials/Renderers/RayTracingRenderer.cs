@@ -78,18 +78,14 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         });
         sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
 
-        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("RayTracing.slang"),
-            "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("RayTracing.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("RayTracing.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("RayTracing.slang");
+        ShaderDesc computeDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader computeShader = App.Context.CreateShader(computeDesc);
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
@@ -166,6 +162,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         });
+
         buildCommands.Submit().Wait();
 
         outputTexture = CreateOutputTexture(App.Width, App.Height);
@@ -181,16 +178,16 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         float angle = totalTime * 0.3f;
         RayTracingConstants constants = new()
         {
-            Position = new(
-                12.0f * MathF.Sin(angle),
-                4.0f + MathF.Sin(totalTime * 0.2f),
-                -12.0f * MathF.Cos(angle)),
+            Position = new(12.0f * MathF.Sin(angle),
+                           4.0f + MathF.Sin(totalTime * 0.2f),
+                           -12.0f * MathF.Cos(angle)),
             Scene = tlas.Handle,
             Spheres = sphereBuffer.StorageReadOnlyHandle,
             OutputTexture = outputTexture.StorageHandle,
             Image = outputTexture.SampledHandle,
             Sampler = sampler.Handle
         };
+
         constantBuffer.Upload(0, new()
         {
             Pointer = (nint)(&constants),
@@ -201,11 +198,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         commandBuffer.SetPipeline(rayTracingPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
-        commandBuffer.Dispatch(
-            (App.Width + ThreadGroupSize - 1) / ThreadGroupSize,
-            (App.Height + ThreadGroupSize - 1) / ThreadGroupSize,
-            1);
+        commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize,
+                               (App.Height + ThreadGroupSize - 1) / ThreadGroupSize,
+                               1);
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
@@ -214,7 +209,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         commandBuffer.SetPipeline(displayPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();
@@ -253,6 +247,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             Usages = BufferUsages.StorageReadOnly | BufferUsages.TransferDst,
             Residency = MemoryResidency.GpuOnly
         });
+
         fixed (T* pointer = data)
         {
             buffer.Upload(0, new()
@@ -261,6 +256,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 SizeInBytes = (uint)(sizeof(T) * data.Length)
             });
         }
+
         return buffer;
     }
 

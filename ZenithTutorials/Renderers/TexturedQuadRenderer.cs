@@ -59,9 +59,8 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             });
         }
 
-        texture = App.Context.LoadTextureFromFile(
-            Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png"),
-            generateMipMaps: true);
+        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
+        texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
         sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
 
         constantBuffer = App.Context.CreateBuffer(new()
@@ -84,6 +83,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         });
 
         InputLayout inputLayout = new();
+
         inputLayout.Add(new()
         {
             Format = ElementFormat.Float3,
@@ -95,14 +95,12 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             Semantic = ElementSemantic.TexCoord
         });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("TexturedQuad.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("TexturedQuad.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("TexturedQuad.slang");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -132,15 +130,14 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.BeginRenderPass(
-            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
-            null);
+
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+                                      null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
         commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();

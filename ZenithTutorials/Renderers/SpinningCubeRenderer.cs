@@ -100,6 +100,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         depthTexture = CreateDepthTexture(App.Width, App.Height);
 
         InputLayout inputLayout = new();
+
         inputLayout.Add(new()
         {
             Format = ElementFormat.Float3,
@@ -111,14 +112,12 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             Semantic = ElementSemantic.Color
         });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("SpinningCube.slang"),
-            "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(
-            App.Context.GraphicsApi,
-            App.ShaderPath("SpinningCube.slang"),
-            "FSMain"));
+        string shaderPath = App.ShaderPath("SpinningCube.slang");
+        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
+        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
+
+        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
+        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -150,11 +149,10 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) *
                           Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
         Matrix4x4 view = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 3.0f), Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(
-            float.DegreesToRadians(45.0f),
-            (float)App.Width / App.Height,
-            0.1f,
-            100.0f);
+        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f),
+                                                                      (float)App.Width / App.Height,
+                                                                      0.1f,
+                                                                      100.0f);
 
         Constants constants = new()
         {
@@ -175,15 +173,13 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
         commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
 
-        commandBuffer.BeginRenderPass(
-            [ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
-            DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
+                                      DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
         commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();

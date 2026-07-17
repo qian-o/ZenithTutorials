@@ -76,11 +76,10 @@ internal static class App
         }
         else
         {
-            surface = Surface.Xlib(
-                window.Native!.X11!.Value.Display,
-                (nint)window.Native.X11.Value.Window,
-                Width,
-                Height);
+            surface = Surface.Xlib(window.Native!.X11!.Value.Display,
+                                   (nint)window.Native.X11.Value.Window,
+                                   Width,
+                                   Height);
         }
 
         swapChain = Context.CreateSwapChain(new()
@@ -88,6 +87,7 @@ internal static class App
             Surface = surface,
             Format = ColorFormat
         });
+
         try
         {
             using TRenderer renderer = new();
@@ -156,6 +156,7 @@ internal static class App
             SampleCount = SampleCount.Count1,
             Usages = TextureUsages.Sampled | TextureUsages.ColorAttachment | TextureUsages.TransferSrc
         });
+
         using TRenderer renderer = new();
 
         renderer.Update(elapsedTime);
