@@ -251,7 +251,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             MipLevels = 1,
             ArrayLayers = 1,
             SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.DepthStencilAttachment
+            Usages = TextureUsages.Sampled | TextureUsages.DepthStencilAttachment
         });
     }
 }
