@@ -109,15 +109,14 @@ internal static class App
                     return;
                 }
 
-                Texture drawable = swapChain.Drawable;
                 CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
 
-                renderer.Render(commandBuffer, drawable);
-                commandBuffer.Transition(drawable,
+                renderer.Render(commandBuffer, swapChain.Drawable);
+                commandBuffer.Transition(swapChain.Drawable,
                                          default,
                                          TextureLayout.ColorAttachment,
                                          TextureLayout.Present);
-                commandBuffer.Submit();
+                commandBuffer.Submit().Wait();
 
                 swapChain.Present();
             };
