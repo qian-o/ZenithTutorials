@@ -46,7 +46,13 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             InstanceCount = InstanceCount
         };
 
-        vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
+        vertexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Vertex | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
         fixed (Vertex* pointer = vertices)
         {
             vertexBuffer.Upload(0, new()
@@ -56,7 +62,13 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
 
-        indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
+        indexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(uint) * indices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Index | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
         fixed (uint* pointer = indices)
         {
             indexBuffer.Upload(0, new()
@@ -66,7 +78,13 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
 
-        indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
+        indirectBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Indirect | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
         indirectBuffer.Upload(0, new()
         {
             Pointer = (nint)(&arguments),
@@ -171,7 +189,10 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+        commandBuffer.Transition(depthTexture,
+                     default,
+                     TextureLayout.Undefined,
+                     TextureLayout.DepthStencilAttachment);
 
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
                                       DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
@@ -220,10 +241,18 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     private static Texture CreateDepthTexture(uint width, uint height)
     {
-        return App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat,
-                                                                            width,
-                                                                            height,
-                                                                            SampleCount.Count1));
+        return App.Context.CreateTexture(new()
+        {
+            Type = TextureType.Texture2D,
+            Format = DepthFormat,
+            Width = width,
+            Height = height,
+            Depth = 1,
+            MipLevels = 1,
+            ArrayLayers = 1,
+            SampleCount = SampleCount.Count1,
+            Usages = TextureUsages.DepthStencilAttachment
+        });
     }
 }
 

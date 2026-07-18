@@ -61,11 +61,11 @@ struct Constants
 
     float4 FrustumPlanes[6];
 
-  private float4 TimeAndLightDirection;
+    private float4 TimeAndLightDirection;
 
-  DescriptorHandle<StructuredBuffer<Vertex>> Vertices;
+    DescriptorHandle<StructuredBuffer<Vertex>> Vertices;
 
-  DescriptorHandle<StructuredBuffer<Triangle>> Triangles;
+    DescriptorHandle<StructuredBuffer<Triangle>> Triangles;
 
     property float Time
     {
@@ -123,7 +123,7 @@ groupshared uint s_visibleCount;
 
 [shader("task")]
 [numthreads(ASGroupSize, 1, 1)]
-void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
+void ASMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID)
 {
     uint instanceIndex = groupID * ASGroupSize + groupThreadID;
 
@@ -156,7 +156,7 @@ void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
 [shader("mesh")]
 [numthreads(120, 1, 1)]
 [outputtopology("triangle")]
-void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in payload Payload meshPayload,
+void MSMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID, in payload Payload meshPayload,
             OutputVertices<VertexOutput, 62> outVertices, OutputIndices<uint3, 120> outIndices)
 {
     uint instanceIndex = meshPayload.InstanceIndices[groupID];

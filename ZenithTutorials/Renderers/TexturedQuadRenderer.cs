@@ -37,7 +37,13 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
 
-        vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
+        vertexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Vertex | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
 
         fixed (Vertex* pointer = vertices)
         {
@@ -48,7 +54,13 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             });
         }
 
-        indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
+        indexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(uint) * indices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Index | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
 
         fixed (uint* pointer = indices)
         {
@@ -61,7 +73,21 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
         string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
         texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
-        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+        sampler = App.Context.CreateSampler(new()
+        {
+            MinFilter = FilterMode.Linear,
+            MagFilter = FilterMode.Linear,
+            MipFilter = FilterMode.Linear,
+            AddressU = AddressMode.Clamp,
+            AddressV = AddressMode.Clamp,
+            AddressW = AddressMode.Clamp,
+            CompareOp = CompareOp.Never,
+            MaxAnisotropy = 1,
+            LodBias = 0.0f,
+            MinLod = 0.0f,
+            MaxLod = float.MaxValue,
+            BorderColor = BorderColor.TransparentBlack
+        });
 
         constantBuffer = App.Context.CreateBuffer(new()
         {

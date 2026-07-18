@@ -225,7 +225,10 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+        commandBuffer.Transition(depthTexture,
+                     default,
+                     TextureLayout.Undefined,
+                     TextureLayout.DepthStencilAttachment);
 
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))],
                                       DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
@@ -277,10 +280,18 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
 
     private static Texture CreateDepthTexture(uint width, uint height)
     {
-        return App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat,
-                                                                            width,
-                                                                            height,
-                                                                            SampleCount.Count1));
+        return App.Context.CreateTexture(new()
+        {
+            Type = TextureType.Texture2D,
+            Format = DepthFormat,
+            Width = width,
+            Height = height,
+            Depth = 1,
+            MipLevels = 1,
+            ArrayLayers = 1,
+            SampleCount = SampleCount.Count1,
+            Usages = TextureUsages.DepthStencilAttachment
+        });
     }
 
     private static Vector4 NormalizePlane(Vector4 plane)

@@ -76,7 +76,21 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             Usages = BufferUsages.Constant,
             Residency = MemoryResidency.CpuWriteOnly
         });
-        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+        sampler = App.Context.CreateSampler(new()
+        {
+            MinFilter = FilterMode.Linear,
+            MagFilter = FilterMode.Linear,
+            MipFilter = FilterMode.Linear,
+            AddressU = AddressMode.Clamp,
+            AddressV = AddressMode.Clamp,
+            AddressW = AddressMode.Clamp,
+            CompareOp = CompareOp.Never,
+            MaxAnisotropy = 1,
+            LodBias = 0.0f,
+            MinLod = 0.0f,
+            MaxLod = float.MaxValue,
+            BorderColor = BorderColor.TransparentBlack
+        });
 
         string shaderPath = App.ShaderPath("RayTracing.slang");
         ShaderDesc computeDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain");
@@ -108,7 +122,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         });
 
         CommandBuffer buildCommands = App.Context.ComputeQueue.CommandBuffer();
-        floorBlas = buildCommands.BuildAccelerationStructure(new BottomLevelAccelerationStructureDesc
+        BottomLevelAccelerationStructureDesc floorDesc = new()
         {
             Geometries =
             [
@@ -125,9 +139,10 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }, true)
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        });
+        };
+        floorBlas = buildCommands.BuildAccelerationStructure(floorDesc);
 
-        sphereBlas = buildCommands.BuildAccelerationStructure(new BottomLevelAccelerationStructureDesc
+        BottomLevelAccelerationStructureDesc sphereDesc = new()
         {
             Geometries =
             [
@@ -139,9 +154,10 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }, true)
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        });
+        };
+        sphereBlas = buildCommands.BuildAccelerationStructure(sphereDesc);
 
-        tlas = buildCommands.BuildAccelerationStructure(new TopLevelAccelerationStructureDesc
+        TopLevelAccelerationStructureDesc desc = new()
         {
             Instances =
             [
@@ -161,7 +177,8 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        });
+        };
+        tlas = buildCommands.BuildAccelerationStructure(desc);
 
         buildCommands.Submit().Wait();
 

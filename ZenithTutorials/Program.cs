@@ -23,6 +23,14 @@ using ZenithTutorials.Renderers;
 
 if (args is ["--capture", string slug, "--output", string output])
 {
+    int tutorialIndex = Array.FindIndex(tutorials, item => item.Slug == slug);
+    if (slug != "all" && tutorialIndex < 0)
+    {
+        Console.Error.WriteLine($"Unknown tutorial slug: '{slug}'.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
     try
     {
         if (slug == "all")
@@ -37,9 +45,7 @@ if (args is ["--capture", string slug, "--output", string output])
         }
         else
         {
-            (string Name, string Slug, Action Run, Action<string> Capture) tutorial =
-                tutorials.Single(item => item.Slug == slug);
-            tutorial.Capture(Path.GetFullPath(output));
+            tutorials[tutorialIndex].Capture(Path.GetFullPath(output));
         }
     }
     finally

@@ -17,17 +17,17 @@ static const float3 AmbientColor = float3(0.15, 0.15, 0.2);
 
 struct Constants
 {
-  private float4 PositionAndPadding;
+    private float4 PositionAndPadding;
 
-  DescriptorHandle<RaytracingAccelerationStructure> Scene;
+    DescriptorHandle<RaytracingAccelerationStructure> Scene;
 
-  DescriptorHandle<StructuredBuffer<Sphere>> Spheres;
+    DescriptorHandle<StructuredBuffer<Sphere>> Spheres;
 
-  DescriptorHandle<RWTexture2D<float4>> OutputTexture;
+    DescriptorHandle<RWTexture2D<float4>> OutputTexture;
 
-  DescriptorHandle<Texture2D> Image;
+    DescriptorHandle<Texture2D> Image;
 
-  DescriptorHandle<SamplerState> Sampler;
+    DescriptorHandle<SamplerState> Sampler;
 
     property float3 Position
     {
@@ -379,7 +379,7 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
 
 [shader("compute")]
 [numthreads(16, 16, 1)]
-void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     uint2 pixelCoord = dispatchThreadID.xy;
 
@@ -467,21 +467,21 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 }
 struct DisplayOutput
 {
-  float4 Position : SV_POSITION;
+    float4 Position : SV_POSITION;
 
-  float2 TexCoord : TEXCOORD0;
+    float2 TexCoord : TEXCOORD0;
 };
 
 [shader("vertex")]
 DisplayOutput VSMain(uint vertexID : SV_VertexID)
 {
-  float2 texCoord = float2((vertexID << 1) & 2, vertexID & 2);
+    float2 texCoord = float2((vertexID << 1) & 2, vertexID & 2);
 
-  DisplayOutput output;
-  output.Position = float4(texCoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
-  output.TexCoord = texCoord;
+    DisplayOutput output;
+    output.Position = float4(texCoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
+    output.TexCoord = texCoord;
 
-  return output;
+    return output;
 }
 
 [shader("fragment")]

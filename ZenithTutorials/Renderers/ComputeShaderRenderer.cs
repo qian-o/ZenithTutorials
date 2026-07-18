@@ -31,7 +31,21 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             Usages = TextureUsages.Sampled | TextureUsages.Storage
         });
 
-        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
+        sampler = App.Context.CreateSampler(new()
+        {
+            MinFilter = FilterMode.Linear,
+            MagFilter = FilterMode.Linear,
+            MipFilter = FilterMode.Linear,
+            AddressU = AddressMode.Clamp,
+            AddressV = AddressMode.Clamp,
+            AddressW = AddressMode.Clamp,
+            CompareOp = CompareOp.Never,
+            MaxAnisotropy = 1,
+            LodBias = 0.0f,
+            MinLod = 0.0f,
+            MaxLod = float.MaxValue,
+            BorderColor = BorderColor.TransparentBlack
+        });
 
         constantBuffer = App.Context.CreateBuffer(new()
         {

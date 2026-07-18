@@ -68,7 +68,13 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             4, 5, 1, 4, 1, 0
         ];
 
-        vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
+        vertexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Vertex | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
 
         fixed (Vertex* pointer = vertices)
         {
@@ -79,7 +85,13 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             });
         }
 
-        indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
+        indexBuffer = App.Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(uint) * indices.Length),
+            StrideInBytes = 0,
+            Usages = BufferUsages.Index | BufferUsages.TransferDst,
+            Residency = MemoryResidency.GpuOnly
+        });
 
         fixed (uint* pointer = indices)
         {
@@ -171,7 +183,10 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+        commandBuffer.Transition(depthTexture,
+                     default,
+                     TextureLayout.Undefined,
+                     TextureLayout.DepthStencilAttachment);
 
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
                                       DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
