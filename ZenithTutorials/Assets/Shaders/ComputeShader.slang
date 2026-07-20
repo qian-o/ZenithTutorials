@@ -1,4 +1,4 @@
-struct Constants
+﻿struct Constants
 {
     uint Width;
 
@@ -17,7 +17,7 @@ ConstantBuffer<Constants> constants;
 
 [shader("compute")]
 [numthreads(16, 16, 1)]
-void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 {
     uint2 pixel = dispatchThreadID.xy;
 
@@ -42,7 +42,7 @@ struct VSOutput
 };
 
 [shader("vertex")]
-VSOutput VSMain(uint vertexID : SV_VertexID)
+VSOutput VSMain(uint vertexID: SV_VertexID)
 {
     float2 texCoord = float2((vertexID << 1) & 2, vertexID & 2);
 

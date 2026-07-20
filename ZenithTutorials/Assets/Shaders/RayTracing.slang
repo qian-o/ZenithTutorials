@@ -1,4 +1,4 @@
-static const float RayEpsilon = 0.001;
+﻿static const float RayEpsilon = 0.001;
 static const float TwoPi = 6.2831853;
 static const uint SphereCount = 3;
 static const uint ShadowSamples = 6;
@@ -367,11 +367,8 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
     float3 directColor = ShadeSphere(hitPoint, normal, sphereColor, viewDir, true);
 
     float3 reflectDir = reflect(rayDir, normal);
-    float3 reflectColor = TraceRoughReflection(hitPoint + normal * RayEpsilon,
-                                               reflectDir,
-                                               normal,
-                                               SphereRoughness,
-                                               hitPoint.xz * 100.0);
+    float3 reflectColor =
+        TraceRoughReflection(hitPoint + normal * RayEpsilon, reflectDir, normal, SphereRoughness, hitPoint.xz * 100.0);
     float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), SphereF0);
 
     return lerp(directColor, reflectColor, fresnel);
@@ -379,7 +376,7 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
 
 [shader("compute")]
 [numthreads(16, 16, 1)]
-void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
+void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 {
     uint2 pixelCoord = dispatchThreadID.xy;
 
@@ -473,7 +470,7 @@ struct DisplayOutput
 };
 
 [shader("vertex")]
-DisplayOutput VSMain(uint vertexID : SV_VertexID)
+DisplayOutput VSMain(uint vertexID: SV_VertexID)
 {
     float2 texCoord = float2((vertexID << 1) & 2, vertexID & 2);
 

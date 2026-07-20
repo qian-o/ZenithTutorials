@@ -1,4 +1,4 @@
-static const uint GridSize = 10;
+﻿static const uint GridSize = 10;
 static const uint TotalInstances = GridSize * GridSize * GridSize;
 static const float InstanceSpacing = 2.5;
 static const uint ASGroupSize = 32;
@@ -123,7 +123,7 @@ groupshared uint s_visibleCount;
 
 [shader("task")]
 [numthreads(ASGroupSize, 1, 1)]
-void ASMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID)
+void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
 {
     uint instanceIndex = groupID * ASGroupSize + groupThreadID;
 
@@ -156,7 +156,7 @@ void ASMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID)
 [shader("mesh")]
 [numthreads(120, 1, 1)]
 [outputtopology("triangle")]
-void MSMain(uint groupID : SV_GroupID, uint groupThreadID : SV_GroupThreadID, in payload Payload meshPayload,
+void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in payload Payload meshPayload,
             OutputVertices<VertexOutput, 62> outVertices, OutputIndices<uint3, 120> outIndices)
 {
     uint instanceIndex = meshPayload.InstanceIndices[groupID];
