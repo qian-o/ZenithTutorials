@@ -30,7 +30,7 @@ struct Constants
     DescriptorHandle<StructuredBuffer<InstanceData>> Instances;
 };
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 [shader("vertex")]
 VSOutput VSMain(VSInput input)

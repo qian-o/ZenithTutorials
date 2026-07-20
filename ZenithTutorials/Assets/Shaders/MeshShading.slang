@@ -116,7 +116,7 @@ bool IsFrustumCulled(float3 center, float radius)
     return false;
 }
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 groupshared Payload s_payload;
 groupshared uint s_visibleCount;

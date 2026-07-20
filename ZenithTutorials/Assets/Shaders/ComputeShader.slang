@@ -13,7 +13,7 @@ struct Constants
     DescriptorHandle<SamplerState> Sampler;
 };
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 [shader("compute")]
 [numthreads(16, 16, 1)]

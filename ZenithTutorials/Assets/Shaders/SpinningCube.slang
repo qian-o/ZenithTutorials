@@ -21,7 +21,7 @@ struct Constants
     float4x4 Projection;
 };
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 [shader("vertex")]
 FSInput VSMain(VSInput input)

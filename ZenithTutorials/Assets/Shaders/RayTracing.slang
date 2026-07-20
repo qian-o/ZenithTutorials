@@ -65,7 +65,7 @@ struct Sphere
     }
 };
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 float3 SampleSky(float3 direction)
 {

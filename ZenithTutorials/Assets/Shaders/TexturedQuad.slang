@@ -19,7 +19,7 @@ struct Constants
     DescriptorHandle<SamplerState> Sampler;
 };
 
-uniform Constants constants;
+ConstantBuffer<Constants> constants;
 
 [shader("vertex")]
 FSInput VSMain(VSInput input)
