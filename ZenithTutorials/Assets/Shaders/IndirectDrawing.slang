@@ -14,7 +14,7 @@ struct VSOutput
     float4 Color : COLOR0;
 };
 
-struct InstanceData
+struct Instance
 {
     float4x4 Model;
 
@@ -27,7 +27,7 @@ struct Constants
 
     float4x4 Projection;
 
-    DescriptorHandle<StructuredBuffer<InstanceData>> Instances;
+    DescriptorHandle<StructuredBuffer<Instance>> Instances;
 };
 
 ConstantBuffer<Constants> constants;
@@ -35,7 +35,7 @@ ConstantBuffer<Constants> constants;
 [shader("vertex")]
 VSOutput VSMain(VSInput input)
 {
-    InstanceData instance = constants.Instances[input.InstanceID];
+    Instance instance = constants.Instances[input.InstanceID];
     float4 worldPosition = mul(float4(input.Position, 1.0), instance.Model);
     float4 viewPosition = mul(worldPosition, constants.View);
 

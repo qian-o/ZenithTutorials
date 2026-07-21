@@ -7,6 +7,8 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
 
     public HelloTriangleRenderer()
     {
+        string shaderPath = App.ShaderPath("HelloTriangle.slang");
+
         Vertex[] vertices =
         [
             new(new(0.0f, 0.6f, 0.0f), new(1.0f, 0.2f, 0.15f, 1.0f)),
@@ -14,16 +16,9 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
             new(new(-0.6f, -0.5f, 0.0f), new(0.2f, 0.45f, 1.0f, 1.0f))
         ];
 
-        vertexBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
-            StrideInBytes = 0,
-            Usages = BufferUsages.Vertex | BufferUsages.TransferDst,
-            Residency = MemoryResidency.GpuOnly
-        });
-
         fixed (Vertex* pointer = vertices)
         {
+            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
             vertexBuffer.Upload(0, new()
             {
                 Pointer = (nint)pointer,
@@ -32,24 +27,11 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         }
 
         InputLayout inputLayout = new();
+        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
+        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
 
-        inputLayout.Add(new()
-        {
-            Format = ElementFormat.Float3,
-            Semantic = ElementSemantic.Position
-        });
-        inputLayout.Add(new()
-        {
-            Format = ElementFormat.Float4,
-            Semantic = ElementSemantic.Color
-        });
-
-        string shaderPath = App.ShaderPath("HelloTriangle.slang");
-        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
-        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
-
-        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
-        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -71,18 +53,19 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         });
     }
 
+    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
+
     public void Update(double deltaTime)
     {
     }
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
+
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();

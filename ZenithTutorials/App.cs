@@ -1,4 +1,4 @@
-using Silk.NET.Windowing;
+﻿using Silk.NET.Windowing;
 using Zenith.NET.DirectX12;
 using Zenith.NET.Metal;
 using Zenith.NET.Vulkan;
@@ -37,9 +37,13 @@ internal static class App
         }
 
         Context.ValidationMessage += static (_, args) => Console.WriteLine($"[{args.Severity}] {args.Message}");
+
+        LinearClampSampler = Context.CreateSampler(SamplerDesc.LinearClamp());
     }
 
     public static GraphicsContext Context { get; }
+
+    public static Sampler LinearClampSampler { get; }
 
     public static PixelFormat ColorFormat => PixelFormat.B8G8R8A8UNorm;
 
@@ -111,11 +115,12 @@ internal static class App
 
                 CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
 
+                commandBuffer.Transition(swapChain.Drawable, default, TextureLayout.Undefined, renderer.RequiredLayout);
+
                 renderer.Render(commandBuffer, swapChain.Drawable);
-                commandBuffer.Transition(swapChain.Drawable,
-                                         default,
-                                         TextureLayout.ColorAttachment,
-                                         TextureLayout.Present);
+
+                commandBuffer.Transition(swapChain.Drawable, default, renderer.RequiredLayout, TextureLayout.Present);
+
                 commandBuffer.Submit().Wait();
 
                 swapChain.Present();
@@ -170,6 +175,8 @@ internal static class App
 
     public static void Shutdown()
     {
+        LinearClampSampler.Dispose();
+
         Context.Dispose();
     }
 
