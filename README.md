@@ -40,7 +40,6 @@ dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture ray-tra
 
 | Tutorial | Renderer | Shader |
 | --- | --- | --- |
-| Project Setup | [ClearRenderer.cs](ZenithTutorials/Renderers/ClearRenderer.cs) | - |
 | Hello Triangle | [HelloTriangleRenderer.cs](ZenithTutorials/Renderers/HelloTriangleRenderer.cs) | [HelloTriangle.slang](ZenithTutorials/Assets/Shaders/HelloTriangle.slang) |
 | Textured Quad | [TexturedQuadRenderer.cs](ZenithTutorials/Renderers/TexturedQuadRenderer.cs) | [TexturedQuad.slang](ZenithTutorials/Assets/Shaders/TexturedQuad.slang) |
 | Spinning Cube | [SpinningCubeRenderer.cs](ZenithTutorials/Renderers/SpinningCubeRenderer.cs) | [SpinningCube.slang](ZenithTutorials/Assets/Shaders/SpinningCube.slang) |

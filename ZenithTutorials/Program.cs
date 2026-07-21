@@ -3,8 +3,6 @@ using ZenithTutorials.Renderers;
 
 (string Name, string Slug, Action Run, Action<string> Capture)[] tutorials =
 [
-    ("Project Setup", "project-setup", App.Run<ClearRenderer>,
-     path => App.Capture<ClearRenderer>(path, 0.0)),
     ("Hello Triangle", "hello-triangle", App.Run<HelloTriangleRenderer>,
      path => App.Capture<HelloTriangleRenderer>(path, 0.0)),
     ("Textured Quad", "textured-quad", App.Run<TexturedQuadRenderer>,
@@ -37,8 +35,7 @@ if (args is ["--capture", string slug, "--output", string output])
         {
             string outputDirectory = Path.GetFullPath(output);
 
-            foreach ((string Name, string Slug, Action Run, Action<string> Capture) tutorial in
-                     tutorials.Where(item => item.Slug != "project-setup"))
+            foreach ((string Name, string Slug, Action Run, Action<string> Capture) tutorial in tutorials)
             {
                 tutorial.Capture(Path.Combine(outputDirectory, $"{tutorial.Slug}.png"));
             }
