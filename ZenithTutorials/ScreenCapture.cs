@@ -5,7 +5,7 @@ namespace ZenithTutorials;
 
 internal static class ScreenCapture
 {
-    public static unsafe void CaptureToFile(CommandBuffer commandBuffer, Texture texture, string filePath)
+    public static unsafe void CaptureToFile(CommandBuffer commandBuffer, Texture texture, TextureLayout currentLayout, string filePath)
     {
         uint width = texture.Desc.Width;
         uint height = texture.Desc.Height;
@@ -13,7 +13,7 @@ internal static class ScreenCapture
 
         fixed (byte* pointer = pixels)
         {
-            commandBuffer.Transition(texture, default, TextureLayout.ColorAttachment, TextureLayout.CopySrc);
+            commandBuffer.Transition(texture, default, currentLayout, TextureLayout.CopySrc);
             commandBuffer.Download(texture,
                                    default,
                                    default,

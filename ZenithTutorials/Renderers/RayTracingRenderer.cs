@@ -12,11 +12,10 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
     private readonly BottomLevelAccelerationStructure floorBlas;
     private readonly BottomLevelAccelerationStructure sphereBlas;
     private readonly TopLevelAccelerationStructure tlas;
-    private readonly Sampler sampler;
     private readonly ComputePipeline rayTracingPipeline;
     private readonly GraphicsPipeline displayPipeline;
 
-    private Texture outputTexture;
+    private Texture? outputTexture;
     private float totalTime;
 
     public RayTracingRenderer()
@@ -25,6 +24,8 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         {
             throw new PlatformNotSupportedException("Ray Tracing is not supported by the selected device.");
         }
+
+        string shaderPath = App.ShaderPath("RayTracing.slang");
 
         Vector3[] floorVertices =
         [
@@ -70,36 +71,11 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
         sphereBuffer = CreateStorageBuffer(spheres);
 
-        constantBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)sizeof(RayTracingConstants),
-            Usages = BufferUsages.Constant,
-            Residency = MemoryResidency.CpuWriteOnly
-        });
-        sampler = App.Context.CreateSampler(new()
-        {
-            MinFilter = FilterMode.Linear,
-            MagFilter = FilterMode.Linear,
-            MipFilter = FilterMode.Linear,
-            AddressU = AddressMode.Clamp,
-            AddressV = AddressMode.Clamp,
-            AddressW = AddressMode.Clamp,
-            CompareOp = CompareOp.Never,
-            MaxAnisotropy = 1,
-            LodBias = 0.0f,
-            MinLod = 0.0f,
-            MaxLod = float.MaxValue,
-            BorderColor = BorderColor.TransparentBlack
-        });
+        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        string shaderPath = App.ShaderPath("RayTracing.slang");
-        ShaderDesc computeDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain");
-        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
-        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
-
-        using Shader computeShader = App.Context.CreateShader(computeDesc);
-        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
-        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
+        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
 
         rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
@@ -181,9 +157,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         tlas = buildCommands.BuildAccelerationStructure(desc);
 
         buildCommands.Submit().Wait();
-
-        outputTexture = CreateOutputTexture(App.Width, App.Height);
     }
+
+    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
     public void Update(double deltaTime)
     {
@@ -192,8 +168,15 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        TextureLayout outputLayout = TextureLayout.Sampled;
+        if (outputTexture is null)
+        {
+            outputTexture = CreateOutputTexture(App.Width, App.Height);
+            outputLayout = TextureLayout.Undefined;
+        }
+
         float angle = totalTime * 0.3f;
-        RayTracingConstants constants = new()
+        Constants constants = new()
         {
             Position = new(12.0f * MathF.Sin(angle),
                            4.0f + MathF.Sin(totalTime * 0.2f),
@@ -202,25 +185,22 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             Spheres = sphereBuffer.StorageReadOnlyHandle,
             OutputTexture = outputTexture.StorageHandle,
             Image = outputTexture.SampledHandle,
-            Sampler = sampler.Handle
+            Sampler = App.LinearClampSampler.Handle
         };
 
         constantBuffer.Upload(0, new()
         {
             Pointer = (nint)(&constants),
-            SizeInBytes = (uint)sizeof(RayTracingConstants)
+            SizeInBytes = (uint)sizeof(Constants)
         });
 
-        commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
+        commandBuffer.Transition(outputTexture, default, outputLayout, TextureLayout.Storage);
 
         commandBuffer.SetPipeline(rayTracingPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
-        commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize,
-                               (App.Height + ThreadGroupSize - 1) / ThreadGroupSize,
-                               1);
+        commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize, (App.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
-        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
 
         commandBuffer.BeginRenderPass([ColorAttachment.DontCare(drawable)], null);
 
@@ -233,17 +213,16 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
     public void Resize(uint width, uint height)
     {
-        Texture replacement = CreateOutputTexture(width, height);
-        outputTexture.Dispose();
-        outputTexture = replacement;
+        outputTexture?.Dispose();
+        outputTexture = null;
     }
 
     public void Dispose()
     {
-        outputTexture.Dispose();
+        outputTexture?.Dispose();
+
         displayPipeline.Dispose();
         rayTracingPipeline.Dispose();
-        sampler.Dispose();
         constantBuffer.Dispose();
         tlas.Dispose();
         sphereBlas.Dispose();
@@ -257,13 +236,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
     private static Buffer CreateStorageBuffer<T>(T[] data, uint strideInBytes = 0) where T : unmanaged
     {
         strideInBytes = strideInBytes is 0 ? (uint)sizeof(T) : strideInBytes;
-        Buffer buffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(T) * data.Length),
-            StrideInBytes = strideInBytes,
-            Usages = BufferUsages.StorageReadOnly | BufferUsages.TransferDst,
-            Residency = MemoryResidency.GpuOnly
-        });
+        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), strideInBytes));
 
         fixed (T* pointer = data)
         {
@@ -295,7 +268,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 256)]
-file struct RayTracingConstants
+file struct Constants
 {
     [FieldOffset(0)]
     public Vector3 Position;

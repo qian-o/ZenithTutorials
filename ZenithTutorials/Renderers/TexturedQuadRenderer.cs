@@ -5,48 +5,27 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
     private readonly Texture texture;
-    private readonly Sampler sampler;
     private readonly Buffer constantBuffer;
     private readonly GraphicsPipeline pipeline;
 
     public TexturedQuadRenderer()
     {
+        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
+        string shaderPath = App.ShaderPath("TexturedQuad.slang");
+
         Vertex[] vertices =
         [
-            new()
-            {
-                Position = new(-0.5f, 0.5f, 0.0f),
-                TexCoord = new(0.0f, 0.0f)
-            },
-            new()
-            {
-                Position = new(0.5f, 0.5f, 0.0f),
-                TexCoord = new(1.0f, 0.0f)
-            },
-            new()
-            {
-                Position = new(0.5f, -0.5f, 0.0f),
-                TexCoord = new(1.0f, 1.0f)
-            },
-            new()
-            {
-                Position = new(-0.5f, -0.5f, 0.0f),
-                TexCoord = new(0.0f, 1.0f)
-            }
+            new(new(-0.5f,  0.5f, 0.0f), new(0.0f, 0.0f)),
+            new(new( 0.5f,  0.5f, 0.0f), new(1.0f, 0.0f)),
+            new(new( 0.5f, -0.5f, 0.0f), new(1.0f, 1.0f)),
+            new(new(-0.5f, -0.5f, 0.0f), new(0.0f, 1.0f))
         ];
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
 
-        vertexBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length),
-            StrideInBytes = 0,
-            Usages = BufferUsages.Vertex | BufferUsages.TransferDst,
-            Residency = MemoryResidency.GpuOnly
-        });
-
         fixed (Vertex* pointer = vertices)
         {
+            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
             vertexBuffer.Upload(0, new()
             {
                 Pointer = (nint)pointer,
@@ -54,16 +33,9 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             });
         }
 
-        indexBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(uint) * indices.Length),
-            StrideInBytes = 0,
-            Usages = BufferUsages.Index | BufferUsages.TransferDst,
-            Residency = MemoryResidency.GpuOnly
-        });
-
         fixed (uint* pointer = indices)
         {
+            indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
             indexBuffer.Upload(0, new()
             {
                 Pointer = (nint)pointer,
@@ -71,35 +43,13 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             });
         }
 
-        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
         texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
-        sampler = App.Context.CreateSampler(new()
-        {
-            MinFilter = FilterMode.Linear,
-            MagFilter = FilterMode.Linear,
-            MipFilter = FilterMode.Linear,
-            AddressU = AddressMode.Clamp,
-            AddressV = AddressMode.Clamp,
-            AddressW = AddressMode.Clamp,
-            CompareOp = CompareOp.Never,
-            MaxAnisotropy = 1,
-            LodBias = 0.0f,
-            MinLod = 0.0f,
-            MaxLod = float.MaxValue,
-            BorderColor = BorderColor.TransparentBlack
-        });
-
-        constantBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)sizeof(Constants),
-            Usages = BufferUsages.Constant,
-            Residency = MemoryResidency.CpuWriteOnly
-        });
+        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
         Constants constants = new()
         {
             Texture = texture.SampledHandle,
-            Sampler = sampler.Handle
+            Sampler = App.LinearClampSampler.Handle
         };
 
         constantBuffer.Upload(0, new()
@@ -109,24 +59,11 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         });
 
         InputLayout inputLayout = new();
+        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
+        inputLayout.Add(new() { Format = ElementFormat.Float2, Semantic = ElementSemantic.TexCoord });
 
-        inputLayout.Add(new()
-        {
-            Format = ElementFormat.Float3,
-            Semantic = ElementSemantic.Position
-        });
-        inputLayout.Add(new()
-        {
-            Format = ElementFormat.Float2,
-            Semantic = ElementSemantic.TexCoord
-        });
-
-        string shaderPath = App.ShaderPath("TexturedQuad.slang");
-        ShaderDesc vertexDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain");
-        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
-
-        using Shader vertexShader = App.Context.CreateShader(vertexDesc);
-        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {
@@ -137,7 +74,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             AttachmentFormats = new()
             {
                 ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = null,
                 SampleCount = SampleCount.Count1
             },
             RenderState = new()
@@ -149,21 +85,21 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         });
     }
 
+    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
+
     public void Update(double deltaTime)
     {
     }
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))],
-                                      null);
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetVertexBuffer(vertexBuffer, 0, 0);
         commandBuffer.SetIndexBuffer(indexBuffer, 0, IndexFormat.UInt32);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();
@@ -177,21 +113,18 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     {
         pipeline.Dispose();
         constantBuffer.Dispose();
-        sampler.Dispose();
         texture.Dispose();
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 20)]
-file struct Vertex
+[StructLayout(LayoutKind.Sequential)]
+file struct Vertex(Vector3 position, Vector2 texCoord)
 {
-    [FieldOffset(0)]
-    public Vector3 Position;
+    public Vector3 Position = position;
 
-    [FieldOffset(12)]
-    public Vector2 TexCoord;
+    public Vector2 TexCoord = texCoord;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 16)]

@@ -145,7 +145,7 @@ internal static class App
         {
             swapChain.Dispose();
             window.Dispose();
-            Context.Dispose();
+            Shutdown();
         }
     }
 
@@ -169,8 +169,10 @@ internal static class App
         renderer.Update(elapsedTime);
 
         CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
+        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, renderer.RequiredLayout);
+
         renderer.Render(commandBuffer, drawable);
-        ScreenCapture.CaptureToFile(commandBuffer, drawable, filePath);
+        ScreenCapture.CaptureToFile(commandBuffer, drawable, renderer.RequiredLayout, filePath);
     }
 
     public static void Shutdown()

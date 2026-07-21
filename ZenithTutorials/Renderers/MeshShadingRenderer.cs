@@ -14,7 +14,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     private readonly Buffer constantBuffer;
     private readonly MeshShadingPipeline pipeline;
 
-    private Texture depthTexture;
+    private Texture? depthTexture;
     private float totalTime;
 
     public MeshShadingRenderer()
@@ -23,6 +23,8 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         {
             throw new PlatformNotSupportedException("Mesh Shading is not supported by the selected device.");
         }
+
+        string shaderPath = App.ShaderPath("MeshShading.slang");
 
         const int longitudeSegments = 12;
         const int latitudeSegments = 6;
@@ -114,15 +116,8 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         vertexBuffer = CreateStorageBuffer<Vertex>([.. sphereVertices]);
         triangleBuffer = CreateStorageBuffer<Triangle>([.. sphereTriangles]);
 
-        constantBuffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)sizeof(MeshConstants),
-            Usages = BufferUsages.Constant,
-            Residency = MemoryResidency.CpuWriteOnly
-        });
-        depthTexture = CreateDepthTexture(App.Width, App.Height);
+        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        string shaderPath = App.ShaderPath("MeshShading.slang");
         ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "ASMain");
         taskDesc.ThreadGroupSize = new()
         {
@@ -139,11 +134,9 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             Z = 1
         };
 
-        ShaderDesc fragmentDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain");
-
         using Shader taskShader = App.Context.CreateShader(taskDesc);
         using Shader meshShader = App.Context.CreateShader(meshDesc);
-        using Shader fragmentShader = App.Context.CreateShader(fragmentDesc);
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
 
         pipeline = App.Context.CreateMeshShadingPipeline(new()
         {
@@ -168,6 +161,8 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         Update(0.0);
     }
 
+    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
+
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;
@@ -176,13 +171,10 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
                                      20.0f * MathF.Sin(totalTime * 0.2f),
                                      35.0f * MathF.Cos(angle));
         Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f),
-                                                                      (float)App.Width / App.Height,
-                                                                      0.1f,
-                                                                      200.0f);
+        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 200.0f);
         Matrix4x4 viewProjection = view * projection;
 
-        MeshConstants constants = new()
+        Constants constants = new()
         {
             ViewProjection = viewProjection,
             FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14,
@@ -218,23 +210,23 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         constantBuffer.Upload(0, new()
         {
             Pointer = (nint)(&constants),
-            SizeInBytes = (uint)sizeof(MeshConstants)
+            SizeInBytes = (uint)sizeof(Constants)
         });
     }
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
-        commandBuffer.Transition(depthTexture,
-                     default,
-                     TextureLayout.Undefined,
-                     TextureLayout.DepthStencilAttachment);
+        if (depthTexture is null)
+        {
+            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+            commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
+        }
 
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))],
-                                      DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
+        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.05f, 0.05f, 0.08f, 1.0f))], DepthStencilAttachment.Clear(depthTexture, 1.0f, 0));
 
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.DispatchMesh(DispatchGroupCount, 1, 1);
 
         commandBuffer.EndRenderPass();
@@ -242,15 +234,15 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
 
     public void Resize(uint width, uint height)
     {
-        Texture replacement = CreateDepthTexture(width, height);
-        depthTexture.Dispose();
-        depthTexture = replacement;
+        depthTexture?.Dispose();
+        depthTexture = null;
     }
 
     public void Dispose()
     {
+        depthTexture?.Dispose();
+
         pipeline.Dispose();
-        depthTexture.Dispose();
         constantBuffer.Dispose();
         triangleBuffer.Dispose();
         vertexBuffer.Dispose();
@@ -258,13 +250,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
 
     private static Buffer CreateStorageBuffer<T>(T[] data) where T : unmanaged
     {
-        Buffer buffer = App.Context.CreateBuffer(new()
-        {
-            SizeInBytes = (uint)(sizeof(T) * data.Length),
-            StrideInBytes = (uint)sizeof(T),
-            Usages = BufferUsages.StorageReadOnly | BufferUsages.TransferDst,
-            Residency = MemoryResidency.GpuOnly
-        });
+        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), (uint)sizeof(T)));
 
         fixed (T* pointer = data)
         {
@@ -276,22 +262,6 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         }
 
         return buffer;
-    }
-
-    private static Texture CreateDepthTexture(uint width, uint height)
-    {
-        return App.Context.CreateTexture(new()
-        {
-            Type = TextureType.Texture2D,
-            Format = DepthFormat,
-            Width = width,
-            Height = height,
-            Depth = 1,
-            MipLevels = 1,
-            ArrayLayers = 1,
-            SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.Sampled | TextureUsages.DepthStencilAttachment
-        });
     }
 
     private static Vector4 NormalizePlane(Vector4 plane)
@@ -324,7 +294,7 @@ file struct Triangle
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 256)]
-file struct MeshConstants
+file struct Constants
 {
     [FieldOffset(0)]
     public Matrix4x4 ViewProjection;
