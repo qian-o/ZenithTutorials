@@ -100,13 +100,13 @@ float SchlickFresnel(float cosTheta, float f0)
 
 float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection, bool softShadow, out float shadow)
 {
-    float2 fw = max(abs(fwidth_approx(hitPoint.xz)), 0.001);
+    float2 fw = max(abs(FwidthApprox(hitPoint.xz)), 0.001);
     float2 fractPos = fract(hitPoint.xz) - 0.5;
     float2 filtered = clamp(fractPos / fw, -0.5, 0.5);
     float checker = 0.5 - 0.5 * filtered.x * filtered.y;
     float3 baseColor = lerp(float3(0.787, 0.787, 0.787), float3(0.1, 0.1, 0.1), checker);
 
-    float NdotL = max(dot(normal, LightDir), 0.0);
+    float ndotl = max(dot(normal, LightDir), 0.0);
     float3 shadowOrigin = hitPoint + normal * RayEpsilon;
     if (softShadow)
     {
@@ -121,7 +121,7 @@ float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection, bo
         shadow = 1.0;
     }
 
-    float3 litColor = baseColor * AmbientColor + baseColor * LightColor * NdotL * shadow;
+    float3 litColor = baseColor * AmbientColor + baseColor * LightColor * ndotl * shadow;
 
     float ao = 1.0;
     for (uint i = 0; i < SphereCount; i++)
@@ -143,7 +143,7 @@ float3 ShadeCheckerboard(float3 hitPoint, float3 normal, float3 rayDirection, bo
 
 float3 ShadeSphere(float3 hitPoint, float3 normal, float3 sphereColor, float3 viewDir, bool softShadow)
 {
-    float NdotL = max(dot(normal, LightDir), 0.0);
+    float ndotl = max(dot(normal, LightDir), 0.0);
 
     float3 halfDir = normalize(LightDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
@@ -163,7 +163,7 @@ float3 ShadeSphere(float3 hitPoint, float3 normal, float3 sphereColor, float3 vi
         shadow = 1.0;
     }
 
-    float3 diffuse = sphereColor * LightColor * NdotL * shadow;
+    float3 diffuse = sphereColor * LightColor * ndotl * shadow;
     float3 specular = LightColor * spec * shadow;
     float3 ambient = sphereColor * AmbientColor;
 
@@ -253,7 +253,7 @@ float IntersectSphere(float3 origin, float3 direction, Sphere sphere)
     return -1.0;
 }
 
-float2 fwidth_approx(float2 p)
+float2 FwidthApprox(float2 p)
 {
     float2 dx = float2(0.02, 0.0);
     float2 dy = float2(0.0, 0.02);
@@ -462,6 +462,7 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 
     constants.OutputTexture[pixelCoord] = float4(color, 1.0);
 }
+
 struct DisplayOutput
 {
     float4 Position : SV_POSITION;

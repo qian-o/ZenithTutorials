@@ -58,42 +58,42 @@ internal static class App
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
-        window = Window.Create(WindowOptions.Default with
-        {
-            Size = new((int)CaptureWidth, (int)CaptureHeight),
-            API = GraphicsAPI.None,
-            Title = "Zenith.NET Tutorials"
-        });
-
-        window.Initialize();
-        window.Center();
-        UpdateDrawableSize();
-
-        Surface surface;
-        if (OperatingSystem.IsWindows())
-        {
-            surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
-        }
-        else
-        {
-            surface = Surface.Xlib(window.Native!.X11!.Value.Display,
-                                   (nint)window.Native.X11.Value.Window,
-                                   Width,
-                                   Height);
-        }
-
-        swapChain = Context.CreateSwapChain(new()
-        {
-            Surface = surface,
-            Format = ColorFormat
-        });
-
         try
         {
+            window = Window.Create(WindowOptions.Default with
+            {
+                Size = new((int)CaptureWidth, (int)CaptureHeight),
+                API = GraphicsAPI.None,
+                Title = "Zenith.NET Tutorials"
+            });
+
+            window.Initialize();
+            window.Center();
+            UpdateDrawableSize();
+
+            Surface surface;
+            if (OperatingSystem.IsWindows())
+            {
+                surface = Surface.Win32(window.Native!.Win32!.Value.Hwnd, Width, Height);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                surface = Surface.Apple(CocoaHelper.CreateLayer(window.Native!.Cocoa!.Value), Width, Height);
+            }
+            else
+            {
+                surface = Surface.Xlib(window.Native!.X11!.Value.Display,
+                                       (nint)window.Native.X11.Value.Window,
+                                       Width,
+                                       Height);
+            }
+
+            swapChain = Context.CreateSwapChain(new()
+            {
+                Surface = surface,
+                Format = ColorFormat
+            });
+
             using TRenderer renderer = new();
 
             window.Update += delta =>
@@ -143,8 +143,8 @@ internal static class App
         }
         finally
         {
-            swapChain.Dispose();
-            window.Dispose();
+            swapChain?.Dispose();
+            window?.Dispose();
             Shutdown();
         }
     }
