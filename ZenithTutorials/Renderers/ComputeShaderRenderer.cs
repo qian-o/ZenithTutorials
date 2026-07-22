@@ -12,7 +12,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
     private bool processed;
 
-    // tutorial:begin initialize-renderer
     public ComputeShaderRenderer()
     {
         string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
@@ -75,7 +74,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             }
         });
     }
-    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -83,7 +81,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
     {
     }
 
-    // tutorial:begin process-and-display
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         uint width = Math.Min(outputTexture.Desc.Width, App.Width);
@@ -115,7 +112,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end process-and-display
 
     public void Resize(uint width, uint height)
     {
@@ -131,7 +127,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
     }
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -153,4 +148,3 @@ file struct Constants
     [FieldOffset(32)]
     public ResourceHandle Sampler;
 }
-// tutorial:end host-data-layout

@@ -20,7 +20,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
     public RayTracingRenderer()
     {
-        // tutorial:begin initialize-renderer
         if (!App.Context.Capabilities.RayTracingSupported)
         {
             throw new PlatformNotSupportedException("Ray Tracing is not supported by the selected device.");
@@ -28,33 +27,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         string shaderPath = App.ShaderPath("RayTracing.slang");
 
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
-
-        using Shader computeShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
-
-        rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
-        displayPipeline = App.Context.CreateGraphicsPipeline(new()
-        {
-            VertexShader = vertexShader,
-            FragmentShader = fragmentShader,
-            InputLayouts = [],
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new() { ColorFormats = [App.ColorFormat], SampleCount = SampleCount.Count1 },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullNone(),
-                DepthStencil = DepthStencilState.DepthNone(),
-                Blend = BlendState.Opaque()
-            }
-        });
-        // tutorial:end initialize-renderer
-
-        // tutorial:begin create-scene-geometry
         Vector3[] floorVertices =
         [
             new(-50.0f, 0.0f, -50.0f),
@@ -64,11 +36,29 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         ];
         uint[] floorIndices = [0, 1, 2, 0, 2, 3];
 
+        floorVertexBuffer = CreateStorageBuffer(floorVertices);
+        floorIndexBuffer = CreateStorageBuffer(floorIndices);
+
         Sphere[] spheres =
         [
-            new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
-            new() { Center = new(2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
-            new() { Center = new(0.0f, 0.6f, -3.0f), Radius = 0.6f, Color = new(0.9f, 0.7f, 0.2f) }
+            new()
+            {
+                Center = new(-2.0f, 1.0f, 1.0f),
+                Radius = 1.0f,
+                Color = new(0.8f, 0.2f, 0.2f)
+            },
+            new()
+            {
+                Center = new(2.0f, 1.2f, -1.0f),
+                Radius = 1.2f,
+                Color = new(0.2f, 0.4f, 0.8f)
+            },
+            new()
+            {
+                Center = new(0.0f, 0.6f, -3.0f),
+                Radius = 0.6f,
+                Color = new(0.9f, 0.7f, 0.2f)
+            }
         ];
 
         Vector3[] aabbs = new Vector3[spheres.Length * 2];
@@ -78,34 +68,36 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             aabbs[(index * 2) + 1] = spheres[index].Center + new Vector3(spheres[index].Radius);
         }
 
-        floorVertexBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Vector3) * floorVertices.Length), (uint)sizeof(Vector3)));
-        fixed (Vector3* pointer = floorVertices)
+        aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
+        sphereBuffer = CreateStorageBuffer(spheres);
+
+        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
+
+        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+
+        rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
+        displayPipeline = App.Context.CreateGraphicsPipeline(new()
         {
-            floorVertexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Vector3) * floorVertices.Length) });
-        }
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
+            InputLayouts = [],
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullNone(),
+                DepthStencil = DepthStencilState.DepthNone(),
+                Blend = BlendState.Opaque()
+            }
+        });
 
-        floorIndexBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(uint) * floorIndices.Length), (uint)sizeof(uint)));
-        fixed (uint* pointer = floorIndices)
-        {
-            floorIndexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(uint) * floorIndices.Length) });
-        }
-
-        aabbBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Vector3) * aabbs.Length), (uint)(sizeof(Vector3) * 2)));
-        fixed (Vector3* pointer = aabbs)
-        {
-            aabbBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Vector3) * aabbs.Length) });
-        }
-
-        sphereBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Sphere) * spheres.Length), (uint)sizeof(Sphere)));
-        fixed (Sphere* pointer = spheres)
-        {
-            sphereBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Sphere) * spheres.Length) });
-        }
-        // tutorial:end create-scene-geometry
-
-        // tutorial:begin build-acceleration-structures
-        CommandBuffer commands = App.Context.ComputeQueue.CommandBuffer();
-
+        CommandBuffer buildCommands = App.Context.ComputeQueue.CommandBuffer();
         BottomLevelAccelerationStructureDesc floorDesc = new()
         {
             Geometries =
@@ -124,7 +116,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         };
-        floorBlas = commands.BuildAccelerationStructure(floorDesc);
+        floorBlas = buildCommands.BuildAccelerationStructure(floorDesc);
 
         BottomLevelAccelerationStructureDesc sphereDesc = new()
         {
@@ -139,21 +131,32 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         };
-        sphereBlas = commands.BuildAccelerationStructure(sphereDesc);
+        sphereBlas = buildCommands.BuildAccelerationStructure(sphereDesc);
 
-        TopLevelAccelerationStructureDesc sceneDesc = new()
+        TopLevelAccelerationStructureDesc desc = new()
         {
             Instances =
             [
-                new() { AccelerationStructure = floorBlas, InstanceId = 0, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity },
-                new() { AccelerationStructure = sphereBlas, InstanceId = 1, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity }
+                new()
+                {
+                    AccelerationStructure = floorBlas,
+                    InstanceId = 0,
+                    VisibilityMask = 0xFF,
+                    Transform = Matrix4x4.Identity
+                },
+                new()
+                {
+                    AccelerationStructure = sphereBlas,
+                    InstanceId = 1,
+                    VisibilityMask = 0xFF,
+                    Transform = Matrix4x4.Identity
+                }
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         };
-        tlas = commands.BuildAccelerationStructure(sceneDesc);
+        tlas = buildCommands.BuildAccelerationStructure(desc);
 
-        commands.Submit().Wait();
-        // tutorial:end build-acceleration-structures
+        buildCommands.Submit().Wait();
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
@@ -163,24 +166,12 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         totalTime += (float)deltaTime;
     }
 
-    // tutorial:begin render-ray-tracing
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         TextureLayout outputLayout = TextureLayout.Sampled;
         if (outputTexture is null)
         {
-            outputTexture = App.Context.CreateTexture(new()
-            {
-                Type = TextureType.Texture2D,
-                Format = PixelFormat.R32G32B32A32Float,
-                Width = App.Width,
-                Height = App.Height,
-                Depth = 1,
-                MipLevels = 1,
-                ArrayLayers = 1,
-                SampleCount = SampleCount.Count1,
-                Usages = TextureUsages.Sampled | TextureUsages.Storage
-            });
+            outputTexture = CreateOutputTexture(App.Width, App.Height);
             outputLayout = TextureLayout.Undefined;
         }
 
@@ -219,15 +210,12 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end render-ray-tracing
 
-    // tutorial:begin resize-output-target
     public void Resize(uint width, uint height)
     {
         outputTexture?.Dispose();
         outputTexture = null;
     }
-    // tutorial:end resize-output-target
 
     public void Dispose()
     {
@@ -244,9 +232,41 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         floorIndexBuffer.Dispose();
         floorVertexBuffer.Dispose();
     }
+
+    private static Buffer CreateStorageBuffer<T>(T[] data, uint strideInBytes = 0) where T : unmanaged
+    {
+        strideInBytes = strideInBytes is 0 ? (uint)sizeof(T) : strideInBytes;
+        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), strideInBytes));
+
+        fixed (T* pointer = data)
+        {
+            buffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(T) * data.Length)
+            });
+        }
+
+        return buffer;
+    }
+
+    private static Texture CreateOutputTexture(uint width, uint height)
+    {
+        return App.Context.CreateTexture(new()
+        {
+            Type = TextureType.Texture2D,
+            Format = PixelFormat.R32G32B32A32Float,
+            Width = width,
+            Height = height,
+            Depth = 1,
+            MipLevels = 1,
+            ArrayLayers = 1,
+            SampleCount = SampleCount.Count1,
+            Usages = TextureUsages.Sampled | TextureUsages.Storage
+        });
+    }
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -281,4 +301,3 @@ file struct Sphere
     [FieldOffset(16)]
     public Vector3 Color;
 }
-// tutorial:end host-data-layout

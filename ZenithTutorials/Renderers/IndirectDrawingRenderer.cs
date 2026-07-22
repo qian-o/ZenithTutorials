@@ -42,6 +42,12 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             4, 5, 1, 4, 1, 0
         ];
 
+        IndirectDrawIndexedArgs arguments = new()
+        {
+            IndexCount = (uint)indices.Length,
+            InstanceCount = InstanceCount
+        };
+
         fixed (Vertex* pointer = vertices)
         {
             vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
@@ -62,7 +68,12 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
 
-        indirectBuffer = CreateIndirectBuffer((uint)indices.Length);
+        indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
+        indirectBuffer.Upload(0, new()
+        {
+            Pointer = (nint)(&arguments),
+            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs)
+        });
 
         instanceBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)sizeof(Instance) * InstanceCount, (uint)sizeof(Instance)));
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
@@ -100,7 +111,6 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
-    // tutorial:begin update-instances
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
@@ -131,9 +141,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
     }
-    // tutorial:end update-instances
 
-    // tutorial:begin render-indirect
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         if (depthTexture is null)
@@ -153,9 +161,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end render-indirect
 
-    // tutorial:begin resize-indirect-resources
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
@@ -174,7 +180,6 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
-    // tutorial:end resize-indirect-resources
 
     public void Dispose()
     {
@@ -187,28 +192,8 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
-
-    // tutorial:begin create-indirect-buffer
-    private static Buffer CreateIndirectBuffer(uint indexCount)
-    {
-        IndirectDrawIndexedArgs arguments = new()
-        {
-            IndexCount = indexCount,
-            InstanceCount = InstanceCount
-        };
-
-        Buffer buffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
-        buffer.Upload(0, new()
-        {
-            Pointer = (nint)(&arguments),
-            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs)
-        });
-        return buffer;
-    }
-    // tutorial:end create-indirect-buffer
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -239,4 +224,3 @@ file struct Constants
     [FieldOffset(128)]
     public ResourceHandle Instances;
 }
-// tutorial:end host-data-layout

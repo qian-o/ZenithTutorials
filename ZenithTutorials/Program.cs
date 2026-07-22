@@ -1,12 +1,6 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-if (CaptureRunner.TryRun(args))
-{
-    return;
-}
-
-// tutorial:begin application-entry
 (string Name, Action Run)[] tutorials =
 [
     ("Hello Triangle", App.Run<HelloTriangleRenderer>),
@@ -25,12 +19,12 @@ for (int index = 0; index < tutorials.Length; index++)
 
 Console.Write("Select a tutorial to run: ");
 
-if (int.TryParse(Console.ReadKey().KeyChar.ToString(), out int choice) &&
-    choice >= 1 &&
-    choice <= tutorials.Length)
+if (!int.TryParse(Console.ReadLine(), out int choice) ||
+    choice < 1 ||
+    choice > tutorials.Length)
 {
-    Console.WriteLine($"\nRunning '{tutorials[choice - 1].Name}' tutorial...");
-
-    tutorials[choice - 1].Run();
+    return;
 }
-// tutorial:end application-entry
+
+Console.WriteLine($"Running '{tutorials[choice - 1].Name}' tutorial...");
+tutorials[choice - 1].Run();

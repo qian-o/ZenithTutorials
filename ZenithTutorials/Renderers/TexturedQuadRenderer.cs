@@ -8,7 +8,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     private readonly Buffer constantBuffer;
     private readonly GraphicsPipeline pipeline;
 
-    // tutorial:begin initialize-renderer
     public TexturedQuadRenderer()
     {
         string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
@@ -85,7 +84,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             }
         });
     }
-    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -93,7 +91,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     {
     }
 
-    // tutorial:begin render-textured-quad
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
@@ -107,7 +104,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end render-textured-quad
 
     public void Resize(uint width, uint height)
     {
@@ -123,7 +119,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     }
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector2 texCoord)
 {
@@ -141,4 +136,3 @@ file struct Constants
     [FieldOffset(8)]
     public ResourceHandle Sampler;
 }
-// tutorial:end host-data-layout

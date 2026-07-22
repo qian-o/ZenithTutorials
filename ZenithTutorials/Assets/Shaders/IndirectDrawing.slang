@@ -1,5 +1,4 @@
-﻿// tutorial:begin indirect-drawing-shader
-struct VSInput
+﻿struct VSInput
 {
     float3 Position : POSITION0;
 
@@ -52,4 +51,3 @@ float4 FSMain(VSOutput input) : SV_TARGET
 {
     return input.Color;
 }
-// tutorial:end indirect-drawing-shader

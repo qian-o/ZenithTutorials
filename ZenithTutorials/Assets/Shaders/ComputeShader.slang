@@ -1,5 +1,4 @@
-﻿// tutorial:begin image-processing-shader
-struct Constants
+﻿struct Constants
 {
     uint Width;
 
@@ -59,4 +58,3 @@ float4 FSMain(VSOutput input) : SV_TARGET
 {
     return constants.Image.Sample(constants.Sampler, input.TexCoord);
 }
-// tutorial:end image-processing-shader

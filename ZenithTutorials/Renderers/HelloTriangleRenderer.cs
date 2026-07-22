@@ -5,7 +5,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     private readonly Buffer vertexBuffer;
     private readonly GraphicsPipeline pipeline;
 
-    // tutorial:begin initialize-renderer
     public HelloTriangleRenderer()
     {
         string shaderPath = App.ShaderPath("HelloTriangle.slang");
@@ -53,7 +52,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
             }
         });
     }
-    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -61,7 +59,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     {
     }
 
-    // tutorial:begin render-triangle
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
@@ -73,7 +70,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end render-triangle
 
     public void Resize(uint width, uint height)
     {
@@ -86,7 +82,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     }
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -94,4 +89,3 @@ file struct Vertex(Vector3 position, Vector4 color)
 
     public Vector4 Color = color;
 }
-// tutorial:end host-data-layout

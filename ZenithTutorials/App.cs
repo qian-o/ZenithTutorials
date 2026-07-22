@@ -16,7 +16,6 @@ internal static class App
     private static uint width = DefaultWidth;
     private static uint height = DefaultHeight;
 
-    // tutorial:begin initialize-graphics-context
     static App()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
@@ -41,9 +40,7 @@ internal static class App
 
         LinearClampSampler = Context.CreateSampler(SamplerDesc.LinearClamp());
     }
-    // tutorial:end initialize-graphics-context
 
-    // tutorial:begin shared-services
     public static GraphicsContext Context { get; }
 
     public static Sampler LinearClampSampler { get; }
@@ -58,9 +55,7 @@ internal static class App
     {
         return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
     }
-    // tutorial:end shared-services
 
-    // tutorial:begin run-application
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
         try
@@ -153,35 +148,8 @@ internal static class App
             Shutdown();
         }
     }
-    // tutorial:end run-application
 
-    public static void Capture<TRenderer>(string filePath, double elapsedTime) where TRenderer : IRenderer, new()
-    {
-        using Texture drawable = Context.CreateTexture(new()
-        {
-            Type = TextureType.Texture2D,
-            Format = ColorFormat,
-            Width = DefaultWidth,
-            Height = DefaultHeight,
-            Depth = 1,
-            MipLevels = 1,
-            ArrayLayers = 1,
-            SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.Sampled | TextureUsages.ColorAttachment | TextureUsages.TransferSrc
-        });
-
-        using TRenderer renderer = new();
-
-        renderer.Update(elapsedTime);
-
-        CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
-        commandBuffer.Transition(drawable, default, TextureLayout.Undefined, renderer.RequiredLayout);
-
-        renderer.Render(commandBuffer, drawable);
-        ScreenCapture.CaptureToFile(commandBuffer, drawable, renderer.RequiredLayout, filePath);
-    }
-
-    public static void Shutdown()
+    private static void Shutdown()
     {
         LinearClampSampler.Dispose();
 

@@ -1,5 +1,4 @@
-﻿// tutorial:begin textured-quad-shader
-struct VSInput
+﻿struct VSInput
 {
     float3 Position : POSITION0;
 
@@ -37,4 +36,3 @@ float4 FSMain(FSInput input) : SV_TARGET
 {
     return constants.Texture.Sample(constants.Sampler, input.TexCoord);
 }
-// tutorial:end textured-quad-shader

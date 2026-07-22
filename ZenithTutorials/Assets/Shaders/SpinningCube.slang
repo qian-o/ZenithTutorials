@@ -1,5 +1,4 @@
-﻿// tutorial:begin cube-shader
-struct VSInput
+﻿struct VSInput
 {
     float3 Position : POSITION0;
 
@@ -42,4 +41,3 @@ float4 FSMain(FSInput input) : SV_TARGET
 {
     return input.Color;
 }
-// tutorial:end cube-shader

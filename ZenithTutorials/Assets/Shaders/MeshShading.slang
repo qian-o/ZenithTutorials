@@ -1,5 +1,4 @@
-﻿// tutorial:begin mesh-shader-data
-static const uint GridSize = 10;
+﻿static const uint GridSize = 10;
 static const uint TotalInstances = GridSize * GridSize * GridSize;
 static const float InstanceSpacing = 2.5;
 static const uint ASGroupSize = 32;
@@ -83,10 +82,6 @@ struct Constants
     }
 };
 
-ConstantBuffer<Constants> constants;
-// tutorial:end mesh-shader-data
-
-// tutorial:begin task-shader
 void DecomposeInstanceID(uint id, out uint x, out uint y, out uint z)
 {
     x = id % GridSize;
@@ -120,6 +115,8 @@ bool IsFrustumCulled(float3 center, float radius)
     }
     return false;
 }
+
+ConstantBuffer<Constants> constants;
 
 groupshared Payload s_payload;
 groupshared uint s_visibleCount;
@@ -155,9 +152,7 @@ void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
 
     DispatchMesh(s_visibleCount, 1, 1, s_payload);
 }
-// tutorial:end task-shader
 
-// tutorial:begin mesh-and-fragment-shaders
 [shader("mesh")]
 [numthreads(120, 1, 1)]
 [outputtopology("triangle")]
@@ -201,4 +196,3 @@ float4 FSMain(VertexOutput input) : SV_TARGET
 
     return float4(ambient + diffuse, 1.0);
 }
-// tutorial:end mesh-and-fragment-shaders

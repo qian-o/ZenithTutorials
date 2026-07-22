@@ -60,14 +60,38 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        pipeline = CreateDepthPipeline(shaderPath);
+        InputLayout inputLayout = new();
+        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
+        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
+
+        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+
+        pipeline = App.Context.CreateGraphicsPipeline(new()
+        {
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
+            InputLayouts = [inputLayout],
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                DepthStencilFormat = DepthFormat,
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullBack(),
+                DepthStencil = DepthStencilState.DepthReadWrite(),
+                Blend = BlendState.Opaque()
+            }
+        });
 
         Update(0.0);
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
-    // tutorial:begin update-transforms
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
@@ -90,9 +114,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
-    // tutorial:end update-transforms
 
-    // tutorial:begin render-with-depth
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
         if (depthTexture is null)
@@ -112,15 +134,12 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
         commandBuffer.EndRenderPass();
     }
-    // tutorial:end render-with-depth
 
-    // tutorial:begin resize-depth-target
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
         depthTexture = null;
     }
-    // tutorial:end resize-depth-target
 
     public void Dispose()
     {
@@ -131,43 +150,8 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
-
-    // tutorial:begin create-depth-pipeline
-    private static GraphicsPipeline CreateDepthPipeline(string shaderPath)
-    {
-        InputLayout inputLayout = new();
-        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
-        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
-
-        using Shader vertexShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
-
-        return App.Context.CreateGraphicsPipeline(new()
-        {
-            VertexShader = vertexShader,
-            FragmentShader = fragmentShader,
-            InputLayouts = [inputLayout],
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new()
-            {
-                ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
-                SampleCount = SampleCount.Count1
-            },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullBack(),
-                DepthStencil = DepthStencilState.DepthReadWrite(),
-                Blend = BlendState.Opaque()
-            }
-        });
-    }
-    // tutorial:end create-depth-pipeline
 }
 
-// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -188,4 +172,3 @@ file struct Constants
     [FieldOffset(128)]
     public Matrix4x4 Projection;
 }
-// tutorial:end host-data-layout

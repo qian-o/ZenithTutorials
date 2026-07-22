@@ -20,22 +20,6 @@ Select a tutorial from the console menu. The shared application host creates the
 
 The host uses DirectX 12 on Windows, Metal on macOS, and Vulkan on Linux. The Linux window path requires X11 or XWayland.
 
-## Screenshots
-
-The documentation images are generated from the real renderers at 1280 by 720 pixels. Regenerate all seven results with:
-
-```shell
-dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture all --output ZenithTutorials/Assets/Screenshots
-```
-
-Use a tutorial slug instead of `all` to capture one result, such as `--capture ray-tracing`.
-
-Capturing `all` requires a device that supports both Ray Tracing and Mesh Shading. The `--output` value is a directory for `all` and a file path for one tutorial:
-
-```shell
-dotnet run --project ZenithTutorials/ZenithTutorials.csproj -- --capture ray-tracing --output ZenithTutorials/Assets/Screenshots/ray-tracing.png
-```
-
 ## Tutorials
 
 | Tutorial | Renderer | Shader |
@@ -54,5 +38,4 @@ Shared host sources:
 - [App.cs](ZenithTutorials/App.cs)
 - [IRenderer.cs](ZenithTutorials/IRenderer.cs)
 - [CocoaHelper.cs](ZenithTutorials/CocoaHelper.cs)
-- [ScreenCapture.cs](ZenithTutorials/ScreenCapture.cs)
 - [Usings.cs](ZenithTutorials/Usings.cs)
