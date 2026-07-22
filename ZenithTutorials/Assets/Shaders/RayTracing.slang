@@ -367,8 +367,7 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
     float3 directColor = ShadeSphere(hitPoint, normal, sphereColor, viewDir, true);
 
     float3 reflectDir = reflect(rayDir, normal);
-    float3 reflectColor =
-        TraceRoughReflection(hitPoint + normal * RayEpsilon, reflectDir, normal, SphereRoughness, hitPoint.xz * 100.0);
+    float3 reflectColor = TraceRoughReflection(hitPoint + normal * RayEpsilon, reflectDir, normal, SphereRoughness, hitPoint.xz * 100.0);
     float fresnel = SchlickFresnel(max(dot(normal, viewDir), 0.0), SphereF0);
 
     return lerp(directColor, reflectColor, fresnel);
