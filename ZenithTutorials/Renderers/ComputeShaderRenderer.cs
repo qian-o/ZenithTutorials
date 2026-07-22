@@ -29,8 +29,6 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             Usages = TextureUsages.Sampled | TextureUsages.Storage
         });
 
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
-
         Constants constants = new()
         {
             Width = inputTexture.Desc.Width,
@@ -41,11 +39,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             Sampler = App.LinearClampSampler.Handle
         };
 
-        constantBuffer.Upload(0, new()
-        {
-            Pointer = (nint)(&constants),
-            SizeInBytes = (uint)sizeof(Constants)
-        });
+        constantBuffer = App.LoadBuffer([constants], BufferUsages.Constant);
 
         using Shader computeShader = App.LoadShader("ComputeShader.slang", "CSMain");
         using Shader vertexShader = App.LoadShader("ComputeShader.slang", "VSMain");

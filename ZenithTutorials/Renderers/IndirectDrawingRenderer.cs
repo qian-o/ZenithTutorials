@@ -50,7 +50,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
         indirectBuffer = App.LoadBuffer([arguments], BufferUsages.Indirect);
         instanceBuffer = App.LoadBuffer(new Instance[InstanceCount], BufferUsages.StorageReadOnly);
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
+        constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });

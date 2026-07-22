@@ -110,10 +110,9 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             });
         }
 
-        vertexBuffer = App.LoadBuffer<Vertex>([.. sphereVertices], BufferUsages.StorageReadOnly);
-        triangleBuffer = App.LoadBuffer<Triangle>([.. sphereTriangles], BufferUsages.StorageReadOnly);
-
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
+        vertexBuffer = App.LoadBuffer([.. sphereVertices], BufferUsages.StorageReadOnly);
+        triangleBuffer = App.LoadBuffer([.. sphereTriangles], BufferUsages.StorageReadOnly);
+        constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         using Shader taskShader = App.LoadShader("MeshShading.slang", "ASMain");
         using Shader meshShader = App.LoadShader("MeshShading.slang", "MSMain");
@@ -147,10 +146,10 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;
+
         float angle = totalTime * 0.3f;
-        Vector3 cameraPosition = new(35.0f * MathF.Sin(angle),
-                                     20.0f * MathF.Sin(totalTime * 0.2f),
-                                     35.0f * MathF.Cos(angle));
+        Vector3 cameraPosition = new(35.0f * MathF.Sin(angle), 20.0f * MathF.Sin(totalTime * 0.2f), 35.0f * MathF.Cos(angle));
+
         Matrix4x4 view = Matrix4x4.CreateLookAt(cameraPosition, Vector3.Zero, Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 200.0f);
         Matrix4x4 viewProjection = view * projection;
@@ -158,10 +157,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         Constants constants = new()
         {
             ViewProjection = viewProjection,
-            FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14,
-                                               viewProjection.M21 + viewProjection.M24,
-                                               viewProjection.M31 + viewProjection.M34,
-                                               viewProjection.M41 + viewProjection.M44)),
+            FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14, viewProjection.M21 + viewProjection.M24, viewProjection.M31 + viewProjection.M34, viewProjection.M41 + viewProjection.M44)),
             FrustumPlane1 = NormalizePlane(new(viewProjection.M14 - viewProjection.M11,
                                                viewProjection.M24 - viewProjection.M21,
                                                viewProjection.M34 - viewProjection.M31,
