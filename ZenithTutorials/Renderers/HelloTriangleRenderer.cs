@@ -7,8 +7,6 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
 
     public HelloTriangleRenderer()
     {
-        string shaderPath = App.ShaderPath("HelloTriangle.slang");
-
         Vertex[] vertices =
         [
             new(new(0.0f, 0.6f, 0.0f), new(1.0f, 0.2f, 0.15f, 1.0f)),
@@ -30,8 +28,8 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader vertexShader = App.LoadShader("HelloTriangle.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("HelloTriangle.slang", "FSMain");
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {

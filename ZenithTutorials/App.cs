@@ -5,7 +5,7 @@ using Zenith.NET.Vulkan;
 
 namespace ZenithTutorials;
 
-internal static class App
+internal unsafe static class App
 {
     private static IWindow? window;
     private static SwapChain? swapChain;
@@ -44,11 +44,6 @@ internal static class App
     public static uint Width => (uint)(window?.FramebufferSize.X ?? 0);
 
     public static uint Height => (uint)(window?.FramebufferSize.Y ?? 0);
-
-    public static Shader CreateShader(string file, string name)
-    {
-        return Context.CreateShader(ZenithCompiler.CompileFromFile(Context.GraphicsApi, Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file), name));
-    }
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
@@ -136,5 +131,37 @@ internal static class App
             LinearClampSampler.Dispose();
             Context.Dispose();
         }
+    }
+
+    public static Buffer LoadBuffer<T>(T[] data, BufferUsages usages) where T : unmanaged
+    {
+        Buffer buffer = Context.CreateBuffer(new()
+        {
+            SizeInBytes = (uint)(sizeof(T) * data.Length),
+            StrideInBytes = (uint)sizeof(T),
+            Usages = usages,
+            Residency = MemoryResidency.CpuWriteOnly
+        });
+
+        fixed (T* pointer = data)
+        {
+            buffer.Upload(0, new()
+            {
+                Pointer = (nint)pointer,
+                SizeInBytes = (uint)(sizeof(T) * data.Length)
+            });
+        }
+
+        return buffer;
+    }
+
+    public static Texture LoadTexture(string file, bool generateMipMaps)
+    {
+        return Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", file), generateMipMaps);
+    }
+
+    public static Shader LoadShader(string file, string name)
+    {
+        return Context.CreateShader(ZenithCompiler.CompileFromFile(Context.GraphicsApi, Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file), name));
     }
 }

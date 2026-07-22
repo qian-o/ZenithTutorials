@@ -14,10 +14,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
     public ComputeShaderRenderer()
     {
-        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
-        string shaderPath = App.ShaderPath("ComputeShader.slang");
-
-        inputTexture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: false);
+        inputTexture = App.LoadTexture("shoko.png", false);
 
         outputTexture = App.Context.CreateTexture(new()
         {
@@ -50,9 +47,9 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
 
-        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader computeShader = App.LoadShader("ComputeShader.slang", "CSMain");
+        using Shader vertexShader = App.LoadShader("ComputeShader.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("ComputeShader.slang", "FSMain");
 
         computePipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
