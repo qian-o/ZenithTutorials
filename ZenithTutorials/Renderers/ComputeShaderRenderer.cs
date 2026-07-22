@@ -131,6 +131,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
     }
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -152,3 +153,4 @@ file struct Constants
     [FieldOffset(32)]
     public ResourceHandle Sampler;
 }
+// tutorial:end host-data-layout

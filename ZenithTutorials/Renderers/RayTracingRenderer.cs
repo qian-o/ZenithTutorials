@@ -277,6 +277,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
     }
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -311,3 +312,4 @@ file struct Sphere
     [FieldOffset(16)]
     public Vector3 Color;
 }
+// tutorial:end host-data-layout

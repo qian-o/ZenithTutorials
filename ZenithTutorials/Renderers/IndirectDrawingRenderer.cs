@@ -208,6 +208,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
     // tutorial:end create-indirect-buffer
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -238,3 +239,4 @@ file struct Constants
     [FieldOffset(128)]
     public ResourceHandle Instances;
 }
+// tutorial:end host-data-layout

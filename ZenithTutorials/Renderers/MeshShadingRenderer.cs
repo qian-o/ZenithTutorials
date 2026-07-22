@@ -282,6 +282,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         return plane / new Vector3(plane.X, plane.Y, plane.Z).Length();
     }
 
+    // tutorial:begin host-source-layout
     [StructLayout(LayoutKind.Explicit, Size = 32)]
     private struct Vertex
     {
@@ -304,8 +305,10 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         [FieldOffset(8)]
         public uint Index2;
     }
+    // tutorial:end host-source-layout
 }
 
+// tutorial:begin host-frame-layout
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -342,3 +345,4 @@ file struct Constants
     [FieldOffset(184)]
     public ResourceHandle Triangles;
 }
+// tutorial:end host-frame-layout

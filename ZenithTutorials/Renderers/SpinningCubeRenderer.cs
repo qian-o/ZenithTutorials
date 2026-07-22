@@ -167,6 +167,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     // tutorial:end create-depth-pipeline
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -187,3 +188,4 @@ file struct Constants
     [FieldOffset(128)]
     public Matrix4x4 Projection;
 }
+// tutorial:end host-data-layout

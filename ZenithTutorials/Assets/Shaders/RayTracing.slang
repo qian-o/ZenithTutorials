@@ -328,7 +328,15 @@ float TraceSoftShadow(float3 origin, float3 direction, float2 pixelSeed)
 
 float3 TraceRoughReflection(float3 origin, float3 reflectDir, float3 normal, float roughness, float2 pixelSeed)
 {
-    float3 tangent = normalize(cross(reflectDir, normal));
+    float3 tangent = cross(reflectDir, normal);
+    if (dot(tangent, tangent) < 0.000001)
+    {
+        float3 fallbackAxis = abs(reflectDir.y) < 0.999
+            ? float3(0.0, 1.0, 0.0)
+            : float3(1.0, 0.0, 0.0);
+        tangent = cross(reflectDir, fallbackAxis);
+    }
+    tangent = normalize(tangent);
     float3 bitangent = cross(reflectDir, tangent);
 
     float3 accum = float3(0.0);

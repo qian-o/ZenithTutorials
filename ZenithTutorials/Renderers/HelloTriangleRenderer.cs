@@ -86,6 +86,7 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     }
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector4 color)
 {
@@ -93,3 +94,4 @@ file struct Vertex(Vector3 position, Vector4 color)
 
     public Vector4 Color = color;
 }
+// tutorial:end host-data-layout

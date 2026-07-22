@@ -123,6 +123,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     }
 }
 
+// tutorial:begin host-data-layout
 [StructLayout(LayoutKind.Sequential)]
 file struct Vertex(Vector3 position, Vector2 texCoord)
 {
@@ -140,3 +141,4 @@ file struct Constants
     [FieldOffset(8)]
     public ResourceHandle Sampler;
 }
+// tutorial:end host-data-layout
