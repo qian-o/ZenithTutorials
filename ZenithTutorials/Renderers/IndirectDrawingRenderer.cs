@@ -18,8 +18,6 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     public IndirectDrawingRenderer()
     {
-        string shaderPath = App.ShaderPath("IndirectDrawing.slang");
-
         Vertex[] vertices =
         [
             new(new(-0.5f, -0.5f,  0.5f), Vector4.One),
@@ -48,42 +46,18 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             InstanceCount = InstanceCount
         };
 
-        fixed (Vertex* pointer = vertices)
-        {
-            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
-            vertexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
-            });
-        }
-
-        fixed (uint* pointer = indices)
-        {
-            indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
-            indexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(uint) * indices.Length)
-            });
-        }
-
-        indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
-        indirectBuffer.Upload(0, new()
-        {
-            Pointer = (nint)(&arguments),
-            SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs)
-        });
-
-        instanceBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)sizeof(Instance) * InstanceCount, (uint)sizeof(Instance)));
+        vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
+        indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
+        indirectBuffer = App.LoadBuffer([arguments], BufferUsages.Indirect);
+        instanceBuffer = App.LoadBuffer(new Instance[InstanceCount], BufferUsages.StorageReadOnly);
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader vertexShader = App.LoadShader("IndirectDrawing.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("IndirectDrawing.slang", "FSMain");
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {

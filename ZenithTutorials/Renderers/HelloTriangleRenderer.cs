@@ -14,15 +14,7 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
             new(new(-0.6f, -0.5f, 0.0f), new(0.2f, 0.45f, 1.0f, 1.0f))
         ];
 
-        fixed (Vertex* pointer = vertices)
-        {
-            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
-            vertexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
-            });
-        }
+        vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });

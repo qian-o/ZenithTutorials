@@ -3,7 +3,6 @@
 internal unsafe sealed class MeshShadingRenderer : IRenderer
 {
     private const uint TaskGroupSize = 32;
-    private const uint MeshGroupSize = 120;
     private const uint GridSize = 10;
     private const uint TotalInstances = GridSize * GridSize * GridSize;
     private const uint DispatchGroupCount = (TotalInstances + TaskGroupSize - 1) / TaskGroupSize;
@@ -23,8 +22,6 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         {
             throw new PlatformNotSupportedException("Mesh Shading is not supported by the selected device.");
         }
-
-        string shaderPath = App.ShaderPath("MeshShading.slang");
 
         const int longitudeSegments = 12;
         const int latitudeSegments = 6;
@@ -113,30 +110,14 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             });
         }
 
-        vertexBuffer = CreateStorageBuffer<Vertex>([.. sphereVertices]);
-        triangleBuffer = CreateStorageBuffer<Triangle>([.. sphereTriangles]);
+        vertexBuffer = App.LoadBuffer<Vertex>([.. sphereVertices], BufferUsages.StorageReadOnly);
+        triangleBuffer = App.LoadBuffer<Triangle>([.. sphereTriangles], BufferUsages.StorageReadOnly);
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "ASMain");
-        taskDesc.ThreadGroupSize = new()
-        {
-            X = TaskGroupSize,
-            Y = 1,
-            Z = 1
-        };
-
-        ShaderDesc meshDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "MSMain");
-        meshDesc.ThreadGroupSize = new()
-        {
-            X = MeshGroupSize,
-            Y = 1,
-            Z = 1
-        };
-
-        using Shader taskShader = App.Context.CreateShader(taskDesc);
-        using Shader meshShader = App.Context.CreateShader(meshDesc);
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader taskShader = App.LoadShader("MeshShading.slang", "ASMain");
+        using Shader meshShader = App.LoadShader("MeshShading.slang", "MSMain");
+        using Shader fragmentShader = App.LoadShader("MeshShading.slang", "FSMain");
 
         pipeline = App.Context.CreateMeshShadingPipeline(new()
         {
@@ -246,22 +227,6 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         constantBuffer.Dispose();
         triangleBuffer.Dispose();
         vertexBuffer.Dispose();
-    }
-
-    private static Buffer CreateStorageBuffer<T>(T[] data) where T : unmanaged
-    {
-        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), (uint)sizeof(T)));
-
-        fixed (T* pointer = data)
-        {
-            buffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(T) * data.Length)
-            });
-        }
-
-        return buffer;
     }
 
     private static Vector4 NormalizePlane(Vector4 plane)

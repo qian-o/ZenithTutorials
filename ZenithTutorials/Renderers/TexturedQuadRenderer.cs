@@ -10,9 +10,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
     public TexturedQuadRenderer()
     {
-        string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
-        string shaderPath = App.ShaderPath("TexturedQuad.slang");
-
         Vertex[] vertices =
         [
             new(new(-0.5f,  0.5f, 0.0f), new(0.0f, 0.0f)),
@@ -23,27 +20,9 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
 
         uint[] indices = [0, 1, 2, 0, 2, 3];
 
-        fixed (Vertex* pointer = vertices)
-        {
-            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
-            vertexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
-            });
-        }
-
-        fixed (uint* pointer = indices)
-        {
-            indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
-            indexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(uint) * indices.Length)
-            });
-        }
-
-        texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
+        vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
+        indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
+        texture = App.LoadTexture("shoko.png", true);
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
         Constants constants = new()
@@ -62,8 +41,8 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float2, Semantic = ElementSemantic.TexCoord });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader vertexShader = App.LoadShader("TexturedQuad.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("TexturedQuad.slang", "FSMain");
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {

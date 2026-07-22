@@ -14,8 +14,6 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
     public SpinningCubeRenderer()
     {
-        string shaderPath = App.ShaderPath("SpinningCube.slang");
-
         Vertex[] vertices =
         [
             new(new(-0.5f, -0.5f,  0.5f), new(1.0f, 0.0f, 0.0f, 1.0f)),
@@ -38,34 +36,16 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             4, 5, 1, 4, 1, 0
         ];
 
-        fixed (Vertex* pointer = vertices)
-        {
-            vertexBuffer = App.Context.CreateBuffer(BufferDesc.Vertex((uint)(sizeof(Vertex) * vertices.Length)));
-            vertexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(Vertex) * vertices.Length)
-            });
-        }
-
-        fixed (uint* pointer = indices)
-        {
-            indexBuffer = App.Context.CreateBuffer(BufferDesc.Index((uint)(sizeof(uint) * indices.Length)));
-            indexBuffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(uint) * indices.Length)
-            });
-        }
-
+        vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
+        indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
 
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader vertexShader = App.LoadShader("SpinningCube.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("SpinningCube.slang", "FSMain");
 
         pipeline = App.Context.CreateGraphicsPipeline(new()
         {

@@ -25,8 +25,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             throw new PlatformNotSupportedException("Ray Tracing is not supported by the selected device.");
         }
 
-        string shaderPath = App.ShaderPath("RayTracing.slang");
-
         Vector3[] floorVertices =
         [
             new(-50.0f, 0.0f, -50.0f),
@@ -36,8 +34,8 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         ];
         uint[] floorIndices = [0, 1, 2, 0, 2, 3];
 
-        floorVertexBuffer = CreateStorageBuffer(floorVertices);
-        floorIndexBuffer = CreateStorageBuffer(floorIndices);
+        floorVertexBuffer = App.LoadBuffer(floorVertices, BufferUsages.StorageReadOnly);
+        floorIndexBuffer = App.LoadBuffer(floorIndices, BufferUsages.StorageReadOnly);
 
         Sphere[] spheres =
         [
@@ -61,21 +59,21 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             }
         ];
 
-        Vector3[] aabbs = new Vector3[spheres.Length * 2];
+        Aabb[] aabbs = new Aabb[spheres.Length];
         for (int index = 0; index < spheres.Length; index++)
         {
-            aabbs[index * 2] = spheres[index].Center - new Vector3(spheres[index].Radius);
-            aabbs[(index * 2) + 1] = spheres[index].Center + new Vector3(spheres[index].Radius);
+            aabbs[index] = new(spheres[index].Center - new Vector3(spheres[index].Radius),
+                               spheres[index].Center + new Vector3(spheres[index].Radius));
         }
 
-        aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
-        sphereBuffer = CreateStorageBuffer(spheres);
+        aabbBuffer = App.LoadBuffer(aabbs, BufferUsages.StorageReadOnly);
+        sphereBuffer = App.LoadBuffer(spheres, BufferUsages.StorageReadOnly);
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+        using Shader computeShader = App.LoadShader("RayTracing.slang", "CSMain");
+        using Shader vertexShader = App.LoadShader("RayTracing.slang", "VSMain");
+        using Shader fragmentShader = App.LoadShader("RayTracing.slang", "FSMain");
 
         rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
         displayPipeline = App.Context.CreateGraphicsPipeline(new()
@@ -126,7 +124,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 {
                     Buffer = aabbBuffer,
                     Count = (uint)spheres.Length,
-                    StrideInBytes = (uint)(sizeof(Vector3) * 2)
+                    StrideInBytes = aabbBuffer.Desc.StrideInBytes
                 }, true)
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
@@ -233,23 +231,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         floorVertexBuffer.Dispose();
     }
 
-    private static Buffer CreateStorageBuffer<T>(T[] data, uint strideInBytes = 0) where T : unmanaged
-    {
-        strideInBytes = strideInBytes is 0 ? (uint)sizeof(T) : strideInBytes;
-        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), strideInBytes));
-
-        fixed (T* pointer = data)
-        {
-            buffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(T) * data.Length)
-            });
-        }
-
-        return buffer;
-    }
-
     private static Texture CreateOutputTexture(uint width, uint height)
     {
         return App.Context.CreateTexture(new()
@@ -265,6 +246,14 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             Usages = TextureUsages.Sampled | TextureUsages.Storage
         });
     }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+file struct Aabb(Vector3 min, Vector3 max)
+{
+    public Vector3 Min = min;
+
+    public Vector3 Max = max;
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 256)]
