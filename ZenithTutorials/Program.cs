@@ -1,57 +1,22 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
-(string Name, string Slug, Action Run, Action<string> Capture)[] tutorials =
-[
-    ("Hello Triangle", "hello-triangle", App.Run<HelloTriangleRenderer>,
-     path => App.Capture<HelloTriangleRenderer>(path, 0.0)),
-    ("Textured Quad", "textured-quad", App.Run<TexturedQuadRenderer>,
-     path => App.Capture<TexturedQuadRenderer>(path, 0.0)),
-    ("Spinning Cube", "spinning-cube", App.Run<SpinningCubeRenderer>,
-     path => App.Capture<SpinningCubeRenderer>(path, 1.0)),
-    ("Image Processing", "compute-shader", App.Run<ComputeShaderRenderer>,
-     path => App.Capture<ComputeShaderRenderer>(path, 0.0)),
-    ("Indirect Drawing", "indirect-drawing", App.Run<IndirectDrawingRenderer>,
-     path => App.Capture<IndirectDrawingRenderer>(path, 1.0)),
-    ("Ray Tracing", "ray-tracing", App.Run<RayTracingRenderer>,
-     path => App.Capture<RayTracingRenderer>(path, 4.0)),
-    ("Mesh Shading", "mesh-shading", App.Run<MeshShadingRenderer>,
-     path => App.Capture<MeshShadingRenderer>(path, 0.0))
-];
-
-if (args is ["--capture", string slug, "--output", string output])
+if (CaptureRunner.TryRun(args))
 {
-    int tutorialIndex = Array.FindIndex(tutorials, item => item.Slug == slug);
-    if (slug != "all" && tutorialIndex < 0)
-    {
-        Console.Error.WriteLine($"Unknown tutorial slug: '{slug}'.");
-        Environment.ExitCode = 1;
-        return;
-    }
-
-    try
-    {
-        if (slug == "all")
-        {
-            string outputDirectory = Path.GetFullPath(output);
-
-            foreach ((string Name, string Slug, Action Run, Action<string> Capture) tutorial in tutorials)
-            {
-                tutorial.Capture(Path.Combine(outputDirectory, $"{tutorial.Slug}.png"));
-            }
-        }
-        else
-        {
-            tutorials[tutorialIndex].Capture(Path.GetFullPath(output));
-        }
-    }
-    finally
-    {
-        App.Shutdown();
-    }
-
     return;
 }
+
+// tutorial:begin application-entry
+(string Name, Action Run)[] tutorials =
+[
+    ("Hello Triangle", App.Run<HelloTriangleRenderer>),
+    ("Textured Quad", App.Run<TexturedQuadRenderer>),
+    ("Spinning Cube", App.Run<SpinningCubeRenderer>),
+    ("Image Processing", App.Run<ComputeShaderRenderer>),
+    ("Indirect Drawing", App.Run<IndirectDrawingRenderer>),
+    ("Ray Tracing", App.Run<RayTracingRenderer>),
+    ("Mesh Shading", App.Run<MeshShadingRenderer>)
+];
 
 for (int index = 0; index < tutorials.Length; index++)
 {
@@ -68,3 +33,4 @@ if (int.TryParse(Console.ReadKey().KeyChar.ToString(), out int choice) &&
 
     tutorials[choice - 1].Run();
 }
+// tutorial:end application-entry
