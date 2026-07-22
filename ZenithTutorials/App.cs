@@ -7,14 +7,8 @@ namespace ZenithTutorials;
 
 internal static class App
 {
-    private const uint DefaultWidth = 1280;
-    private const uint DefaultHeight = 720;
-
     private static IWindow? window;
     private static SwapChain? swapChain;
-
-    private static uint width = DefaultWidth;
-    private static uint height = DefaultHeight;
 
     static App()
     {
@@ -47,13 +41,13 @@ internal static class App
 
     public static PixelFormat ColorFormat => PixelFormat.B8G8R8A8UNorm;
 
-    public static uint Width => width;
+    public static uint Width => (uint)(window?.FramebufferSize.X ?? 0);
 
-    public static uint Height => height;
+    public static uint Height => (uint)(window?.FramebufferSize.Y ?? 0);
 
-    public static string ShaderPath(string file)
+    public static Shader CreateShader(string file, string name)
     {
-        return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
+        return Context.CreateShader(ZenithCompiler.CompileFromFile(Context.GraphicsApi, Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file), name));
     }
 
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
@@ -62,14 +56,12 @@ internal static class App
         {
             window = Window.Create(WindowOptions.Default with
             {
-                Size = new((int)DefaultWidth, (int)DefaultHeight),
                 API = GraphicsAPI.None,
                 Title = "Zenith.NET Tutorials"
             });
 
             window.Initialize();
             window.Center();
-            UpdateDrawableSize();
 
             Surface surface;
             if (OperatingSystem.IsWindows())
@@ -82,10 +74,7 @@ internal static class App
             }
             else
             {
-                surface = Surface.Xlib(window.Native!.X11!.Value.Display,
-                                       (nint)window.Native.X11.Value.Window,
-                                       Width,
-                                       Height);
+                surface = Surface.Xlib(window.Native!.X11!.Value.Display, (nint)window.Native.X11.Value.Window, Width, Height);
             }
 
             swapChain = Context.CreateSwapChain(new()
@@ -128,8 +117,6 @@ internal static class App
 
             window.Resize += _ =>
             {
-                UpdateDrawableSize();
-
                 if (Width is 0 || Height is 0)
                 {
                     return;
@@ -145,20 +132,9 @@ internal static class App
         {
             swapChain?.Dispose();
             window?.Dispose();
-            Shutdown();
+
+            LinearClampSampler.Dispose();
+            Context.Dispose();
         }
-    }
-
-    private static void Shutdown()
-    {
-        LinearClampSampler.Dispose();
-
-        Context.Dispose();
-    }
-
-    private static void UpdateDrawableSize()
-    {
-        width = (uint)window!.FramebufferSize.X;
-        height = (uint)window.FramebufferSize.Y;
     }
 }

@@ -19,12 +19,11 @@ for (int index = 0; index < tutorials.Length; index++)
 
 Console.Write("Select a tutorial to run: ");
 
-if (!int.TryParse(Console.ReadLine(), out int choice) ||
-    choice < 1 ||
-    choice > tutorials.Length)
+if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 1 || choice > tutorials.Length)
 {
     return;
 }
 
 Console.WriteLine($"Running '{tutorials[choice - 1].Name}' tutorial...");
+
 tutorials[choice - 1].Run();

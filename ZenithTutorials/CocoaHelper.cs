@@ -1,4 +1,4 @@
-namespace ZenithTutorials;
+﻿namespace ZenithTutorials;
 
 internal static partial class CocoaHelper
 {
