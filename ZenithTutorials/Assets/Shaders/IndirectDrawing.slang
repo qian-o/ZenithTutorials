@@ -1,4 +1,4 @@
-﻿// tutorial:begin shader-inputs
+﻿// tutorial:begin indirect-drawing-shader
 struct VSInput
 {
     float3 Position : POSITION0;
@@ -14,9 +14,7 @@ struct VSOutput
 
     float4 Color : COLOR0;
 };
-// tutorial:end shader-inputs
 
-// tutorial:begin instance-data
 struct Instance
 {
     float4x4 Model;
@@ -34,9 +32,7 @@ struct Constants
 };
 
 ConstantBuffer<Constants> constants;
-// tutorial:end instance-data
 
-// tutorial:begin vertex-stage
 [shader("vertex")]
 VSOutput VSMain(VSInput input)
 {
@@ -50,12 +46,10 @@ VSOutput VSMain(VSInput input)
 
     return output;
 }
-// tutorial:end vertex-stage
 
-// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(VSOutput input) : SV_TARGET
 {
     return input.Color;
 }
-// tutorial:end fragment-stage
+// tutorial:end indirect-drawing-shader

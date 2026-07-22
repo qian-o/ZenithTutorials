@@ -8,12 +8,12 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     private readonly Buffer constantBuffer;
     private readonly GraphicsPipeline pipeline;
 
+    // tutorial:begin initialize-renderer
     public TexturedQuadRenderer()
     {
         string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
         string shaderPath = App.ShaderPath("TexturedQuad.slang");
 
-        // tutorial:begin indexed-geometry
         Vertex[] vertices =
         [
             new(new(-0.5f,  0.5f, 0.0f), new(0.0f, 0.0f)),
@@ -43,9 +43,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
                 SizeInBytes = (uint)(sizeof(uint) * indices.Length)
             });
         }
-        // tutorial:end indexed-geometry
 
-        // tutorial:begin texture-handles
         texture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: true);
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
@@ -60,9 +58,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             Pointer = (nint)(&constants),
             SizeInBytes = (uint)sizeof(Constants)
         });
-        // tutorial:end texture-handles
 
-        // tutorial:begin graphics-pipeline
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float2, Semantic = ElementSemantic.TexCoord });
@@ -88,8 +84,8 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
-        // tutorial:end graphics-pipeline
     }
+    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -97,9 +93,9 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
     {
     }
 
+    // tutorial:begin render-textured-quad
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        // tutorial:begin record-draw
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
@@ -110,8 +106,8 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();
-        // tutorial:end record-draw
     }
+    // tutorial:end render-textured-quad
 
     public void Resize(uint width, uint height)
     {

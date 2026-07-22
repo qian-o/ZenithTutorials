@@ -5,11 +5,11 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     private readonly Buffer vertexBuffer;
     private readonly GraphicsPipeline pipeline;
 
+    // tutorial:begin initialize-renderer
     public HelloTriangleRenderer()
     {
         string shaderPath = App.ShaderPath("HelloTriangle.slang");
 
-        // tutorial:begin vertex-data
         Vertex[] vertices =
         [
             new(new(0.0f, 0.6f, 0.0f), new(1.0f, 0.2f, 0.15f, 1.0f)),
@@ -30,9 +30,7 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
-        // tutorial:end vertex-data
 
-        // tutorial:begin graphics-pipeline
         using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
         using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
 
@@ -54,8 +52,8 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
-        // tutorial:end graphics-pipeline
     }
+    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -63,9 +61,9 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
     {
     }
 
+    // tutorial:begin render-triangle
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        // tutorial:begin record-draw
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
 
         commandBuffer.SetPipeline(pipeline);
@@ -74,8 +72,8 @@ internal unsafe sealed class HelloTriangleRenderer : IRenderer
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();
-        // tutorial:end record-draw
     }
+    // tutorial:end render-triangle
 
     public void Resize(uint width, uint height)
     {

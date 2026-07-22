@@ -60,41 +60,14 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        // tutorial:begin graphics-pipeline
-        InputLayout inputLayout = new();
-        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
-        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
-
-        using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
-
-        pipeline = App.Context.CreateGraphicsPipeline(new()
-        {
-            VertexShader = vertexShader,
-            FragmentShader = fragmentShader,
-            InputLayouts = [inputLayout],
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new()
-            {
-                ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
-                SampleCount = SampleCount.Count1
-            },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullBack(),
-                DepthStencil = DepthStencilState.DepthReadWrite(),
-                Blend = BlendState.Opaque()
-            }
-        });
-        // tutorial:end graphics-pipeline
+        pipeline = CreateDepthPipeline(shaderPath);
 
         Update(0.0);
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
-    // tutorial:begin transform-constants
+    // tutorial:begin update-transforms
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
@@ -117,11 +90,11 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
-    // tutorial:end transform-constants
+    // tutorial:end update-transforms
 
+    // tutorial:begin render-with-depth
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        // tutorial:begin record-draw
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
@@ -138,16 +111,16 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();
-        // tutorial:end record-draw
     }
+    // tutorial:end render-with-depth
 
-    // tutorial:begin resize-depth
+    // tutorial:begin resize-depth-target
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
         depthTexture = null;
     }
-    // tutorial:end resize-depth
+    // tutorial:end resize-depth-target
 
     public void Dispose()
     {
@@ -158,6 +131,40 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         indexBuffer.Dispose();
         vertexBuffer.Dispose();
     }
+
+    // tutorial:begin create-depth-pipeline
+    private static GraphicsPipeline CreateDepthPipeline(string shaderPath)
+    {
+        InputLayout inputLayout = new();
+        inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
+        inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
+
+        using Shader vertexShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+
+        return App.Context.CreateGraphicsPipeline(new()
+        {
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
+            InputLayouts = [inputLayout],
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                DepthStencilFormat = DepthFormat,
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullBack(),
+                DepthStencil = DepthStencilState.DepthReadWrite(),
+                Blend = BlendState.Opaque()
+            }
+        });
+    }
+    // tutorial:end create-depth-pipeline
 }
 
 [StructLayout(LayoutKind.Sequential)]

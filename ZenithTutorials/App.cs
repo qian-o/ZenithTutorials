@@ -16,7 +16,7 @@ internal static class App
     private static uint width = CaptureWidth;
     private static uint height = CaptureHeight;
 
-    // tutorial:begin graphics-context
+    // tutorial:begin initialize-graphics-context
     static App()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
@@ -41,13 +41,13 @@ internal static class App
 
         LinearClampSampler = Context.CreateSampler(SamplerDesc.LinearClamp());
     }
+    // tutorial:end initialize-graphics-context
 
     public static GraphicsContext Context { get; }
 
     public static Sampler LinearClampSampler { get; }
 
     public static PixelFormat ColorFormat => PixelFormat.B8G8R8A8UNorm;
-    // tutorial:end graphics-context
 
     public static uint Width => width;
 
@@ -58,11 +58,11 @@ internal static class App
         return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
     }
 
+    // tutorial:begin run-application
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
     {
         try
         {
-            // tutorial:begin window-and-swap-chain
             window = Window.Create(WindowOptions.Default with
             {
                 Size = new((int)CaptureWidth, (int)CaptureHeight),
@@ -98,9 +98,7 @@ internal static class App
             });
 
             using TRenderer renderer = new();
-            // tutorial:end window-and-swap-chain
 
-            // tutorial:begin frame-lifecycle
             window.Update += delta =>
             {
                 if (Width is 0 || Height is 0)
@@ -130,9 +128,7 @@ internal static class App
 
                 swapChain.Present();
             };
-            // tutorial:end frame-lifecycle
 
-            // tutorial:begin resize-lifecycle
             window.Resize += _ =>
             {
                 UpdateDrawableSize();
@@ -145,7 +141,6 @@ internal static class App
                 renderer.Resize(Width, Height);
                 swapChain.Resize(Width, Height);
             };
-            // tutorial:end resize-lifecycle
 
             window.Run();
         }
@@ -156,6 +151,7 @@ internal static class App
             Shutdown();
         }
     }
+    // tutorial:end run-application
 
     // tutorial:begin capture-frame
     public static void Capture<TRenderer>(string filePath, double elapsedTime) where TRenderer : IRenderer, new()

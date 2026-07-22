@@ -1,4 +1,5 @@
-﻿static const uint GridSize = 10;
+﻿// tutorial:begin mesh-shader-data
+static const uint GridSize = 10;
 static const uint TotalInstances = GridSize * GridSize * GridSize;
 static const float InstanceSpacing = 2.5;
 static const uint ASGroupSize = 32;
@@ -8,7 +9,6 @@ static const uint SphereVertexCount = 62;
 static const uint SphereTriangleCount = 120;
 static const float GridOffset = float(GridSize - 1) * 0.5 * InstanceSpacing;
 
-// tutorial:begin source-vertex
 struct Vertex
 {
     private float4 PositionAndPadding;
@@ -29,9 +29,7 @@ struct Vertex
         }
     }
 };
-// tutorial:end source-vertex
 
-// tutorial:begin source-triangle
 struct Triangle
 {
     private uint4 IndicesAndPadding;
@@ -43,9 +41,7 @@ struct Triangle
         }
     }
 };
-// tutorial:end source-triangle
 
-// tutorial:begin task-payload
 struct Payload
 {
     uint InstanceIndices[ASGroupSize];
@@ -59,9 +55,7 @@ struct VertexOutput
 
     float3 Color : COLOR;
 };
-// tutorial:end task-payload
 
-// tutorial:begin shader-resources
 struct Constants
 {
     float4x4 ViewProjection;
@@ -88,8 +82,11 @@ struct Constants
         }
     }
 };
-// tutorial:end shader-resources
 
+ConstantBuffer<Constants> constants;
+// tutorial:end mesh-shader-data
+
+// tutorial:begin task-shader
 void DecomposeInstanceID(uint id, out uint x, out uint y, out uint z)
 {
     x = id % GridSize;
@@ -111,7 +108,6 @@ float3 InstanceColor(uint id)
     return float3(x, y, z) / float(GridSize - 1);
 }
 
-// tutorial:begin frustum-culling
 bool IsFrustumCulled(float3 center, float radius)
 {
     for (uint i = 0; i < 6; i++)
@@ -124,10 +120,6 @@ bool IsFrustumCulled(float3 center, float radius)
     }
     return false;
 }
-// tutorial:end frustum-culling
-
-// tutorial:begin task-stage
-ConstantBuffer<Constants> constants;
 
 groupshared Payload s_payload;
 groupshared uint s_visibleCount;
@@ -163,9 +155,9 @@ void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
 
     DispatchMesh(s_visibleCount, 1, 1, s_payload);
 }
-// tutorial:end task-stage
+// tutorial:end task-shader
 
-// tutorial:begin mesh-stage
+// tutorial:begin mesh-and-fragment-shaders
 [shader("mesh")]
 [numthreads(120, 1, 1)]
 [outputtopology("triangle")]
@@ -196,9 +188,7 @@ void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in p
         outIndices[groupThreadID] = constants.Triangles[groupThreadID].Indices;
     }
 }
-// tutorial:end mesh-stage
 
-// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(VertexOutput input) : SV_TARGET
 {
@@ -211,4 +201,4 @@ float4 FSMain(VertexOutput input) : SV_TARGET
 
     return float4(ambient + diffuse, 1.0);
 }
-// tutorial:end fragment-stage
+// tutorial:end mesh-and-fragment-shaders

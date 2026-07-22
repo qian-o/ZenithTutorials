@@ -17,6 +17,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     private Texture? depthTexture;
     private float totalTime;
 
+    // tutorial:begin initialize-renderer
     public MeshShadingRenderer()
     {
         if (!App.Context.Capabilities.MeshShadingSupported)
@@ -24,154 +25,20 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             throw new PlatformNotSupportedException("Mesh Shading is not supported by the selected device.");
         }
 
-        string shaderPath = App.ShaderPath("MeshShading.slang");
+        (Vertex[] vertices, Triangle[] triangles) = CreateSphereGeometry();
 
-        // tutorial:begin sphere-vertices
-        const int longitudeSegments = 12;
-        const int latitudeSegments = 6;
-        const float radius = 0.5f;
-
-        List<Vertex> sphereVertices = [];
-        List<Triangle> sphereTriangles = [];
-
-        sphereVertices.Add(new()
-        {
-            Position = new(0.0f, radius, 0.0f),
-            Normal = Vector3.UnitY
-        });
-
-        for (int latitude = 1; latitude < latitudeSegments; latitude++)
-        {
-            float phi = MathF.PI * latitude / latitudeSegments;
-            float sinPhi = MathF.Sin(phi);
-            float cosPhi = MathF.Cos(phi);
-
-            for (int longitude = 0; longitude < longitudeSegments; longitude++)
-            {
-                float theta = 2.0f * MathF.PI * longitude / longitudeSegments;
-                Vector3 normal = new(sinPhi * MathF.Cos(theta),
-                                     cosPhi,
-                                     sinPhi * MathF.Sin(theta));
-                sphereVertices.Add(new()
-                {
-                    Position = normal * radius,
-                    Normal = normal
-                });
-            }
-        }
-
-        sphereVertices.Add(new()
-        {
-            Position = new(0.0f, -radius, 0.0f),
-            Normal = -Vector3.UnitY
-        });
-        // tutorial:end sphere-vertices
-
-        // tutorial:begin sphere-triangles
-        for (int longitude = 0; longitude < longitudeSegments; longitude++)
-        {
-            uint next = (uint)((longitude + 1) % longitudeSegments);
-            sphereTriangles.Add(new()
-            {
-                Index0 = 0,
-                Index1 = (uint)(1 + longitude),
-                Index2 = 1 + next
-            });
-        }
-
-        for (int latitude = 0; latitude < latitudeSegments - 2; latitude++)
-        {
-            for (int longitude = 0; longitude < longitudeSegments; longitude++)
-            {
-                uint next = (uint)((longitude + 1) % longitudeSegments);
-                uint topLeft = (uint)(1 + (latitude * longitudeSegments) + longitude);
-                uint topRight = (uint)(1 + (latitude * longitudeSegments)) + next;
-                uint bottomLeft = (uint)(1 + ((latitude + 1) * longitudeSegments) + longitude);
-                uint bottomRight = (uint)(1 + ((latitude + 1) * longitudeSegments)) + next;
-                sphereTriangles.Add(new()
-                {
-                    Index0 = topLeft,
-                    Index1 = bottomLeft,
-                    Index2 = topRight
-                });
-                sphereTriangles.Add(new()
-                {
-                    Index0 = topRight,
-                    Index1 = bottomLeft,
-                    Index2 = bottomRight
-                });
-            }
-        }
-
-        uint bottomPole = (uint)(sphereVertices.Count - 1);
-        uint lastRing = 1 + ((latitudeSegments - 2) * longitudeSegments);
-        for (int longitude = 0; longitude < longitudeSegments; longitude++)
-        {
-            uint next = (uint)((longitude + 1) % longitudeSegments);
-            sphereTriangles.Add(new()
-            {
-                Index0 = bottomPole,
-                Index1 = lastRing + next,
-                Index2 = lastRing + (uint)longitude
-            });
-        }
-        // tutorial:end sphere-triangles
-
-        // tutorial:begin source-buffers
-        vertexBuffer = CreateStorageBuffer<Vertex>([.. sphereVertices]);
-        triangleBuffer = CreateStorageBuffer<Triangle>([.. sphereTriangles]);
-        // tutorial:end source-buffers
-
+        vertexBuffer = CreateStorageBuffer(vertices);
+        triangleBuffer = CreateStorageBuffer(triangles);
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
-
-        // tutorial:begin mesh-shading-pipeline
-        ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "ASMain");
-        taskDesc.ThreadGroupSize = new()
-        {
-            X = TaskGroupSize,
-            Y = 1,
-            Z = 1
-        };
-
-        ShaderDesc meshDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "MSMain");
-        meshDesc.ThreadGroupSize = new()
-        {
-            X = MeshGroupSize,
-            Y = 1,
-            Z = 1
-        };
-
-        using Shader taskShader = App.Context.CreateShader(taskDesc);
-        using Shader meshShader = App.Context.CreateShader(meshDesc);
-        using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
-
-        pipeline = App.Context.CreateMeshShadingPipeline(new()
-        {
-            TaskShader = taskShader,
-            MeshShader = meshShader,
-            FragmentShader = fragmentShader,
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new()
-            {
-                ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
-                SampleCount = SampleCount.Count1
-            },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullBack(),
-                DepthStencil = DepthStencilState.DepthReadWrite(),
-                Blend = BlendState.Opaque()
-            }
-        });
-        // tutorial:end mesh-shading-pipeline
+        pipeline = CreateMeshShadingPipeline();
 
         Update(0.0);
     }
+    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
-    // tutorial:begin culling-constants
+    // tutorial:begin update-frame-data
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;
@@ -222,11 +89,11 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
-    // tutorial:end culling-constants
+    // tutorial:end update-frame-data
 
+    // tutorial:begin record-mesh-draw
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        // tutorial:begin record-draw
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
@@ -241,16 +108,16 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         commandBuffer.DispatchMesh(DispatchGroupCount, 1, 1);
 
         commandBuffer.EndRenderPass();
-        // tutorial:end record-draw
     }
+    // tutorial:end record-mesh-draw
 
-    // tutorial:begin resize-depth
+    // tutorial:begin resize-render-targets
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
         depthTexture = null;
     }
-    // tutorial:end resize-depth
+    // tutorial:end resize-render-targets
 
     public void Dispose()
     {
@@ -261,6 +128,138 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         triangleBuffer.Dispose();
         vertexBuffer.Dispose();
     }
+
+    // tutorial:begin create-source-geometry
+    private static (Vertex[] Vertices, Triangle[] Triangles) CreateSphereGeometry()
+    {
+        const int longitudeSegments = 12;
+        const int latitudeSegments = 6;
+        const float radius = 0.5f;
+
+        List<Vertex> vertices = [];
+        List<Triangle> triangles = [];
+
+        vertices.Add(new()
+        {
+            Position = new(0.0f, radius, 0.0f),
+            Normal = Vector3.UnitY
+        });
+
+        for (int latitude = 1; latitude < latitudeSegments; latitude++)
+        {
+            float phi = MathF.PI * latitude / latitudeSegments;
+            float sinPhi = MathF.Sin(phi);
+            float cosPhi = MathF.Cos(phi);
+
+            for (int longitude = 0; longitude < longitudeSegments; longitude++)
+            {
+                float theta = 2.0f * MathF.PI * longitude / longitudeSegments;
+                Vector3 normal = new(sinPhi * MathF.Cos(theta),
+                                     cosPhi,
+                                     sinPhi * MathF.Sin(theta));
+                vertices.Add(new()
+                {
+                    Position = normal * radius,
+                    Normal = normal
+                });
+            }
+        }
+
+        vertices.Add(new()
+        {
+            Position = new(0.0f, -radius, 0.0f),
+            Normal = -Vector3.UnitY
+        });
+
+        for (int longitude = 0; longitude < longitudeSegments; longitude++)
+        {
+            uint next = (uint)((longitude + 1) % longitudeSegments);
+            triangles.Add(new()
+            {
+                Index0 = 0,
+                Index1 = (uint)(1 + longitude),
+                Index2 = 1 + next
+            });
+        }
+
+        for (int latitude = 0; latitude < latitudeSegments - 2; latitude++)
+        {
+            for (int longitude = 0; longitude < longitudeSegments; longitude++)
+            {
+                uint next = (uint)((longitude + 1) % longitudeSegments);
+                uint topLeft = (uint)(1 + (latitude * longitudeSegments) + longitude);
+                uint topRight = (uint)(1 + (latitude * longitudeSegments)) + next;
+                uint bottomLeft = (uint)(1 + ((latitude + 1) * longitudeSegments) + longitude);
+                uint bottomRight = (uint)(1 + ((latitude + 1) * longitudeSegments)) + next;
+                triangles.Add(new()
+                {
+                    Index0 = topLeft,
+                    Index1 = bottomLeft,
+                    Index2 = topRight
+                });
+                triangles.Add(new()
+                {
+                    Index0 = topRight,
+                    Index1 = bottomLeft,
+                    Index2 = bottomRight
+                });
+            }
+        }
+
+        uint bottomPole = (uint)(vertices.Count - 1);
+        uint lastRing = 1 + ((latitudeSegments - 2) * longitudeSegments);
+        for (int longitude = 0; longitude < longitudeSegments; longitude++)
+        {
+            uint next = (uint)((longitude + 1) % longitudeSegments);
+            triangles.Add(new()
+            {
+                Index0 = bottomPole,
+                Index1 = lastRing + next,
+                Index2 = lastRing + (uint)longitude
+            });
+        }
+
+        return ([.. vertices], [.. triangles]);
+    }
+    // tutorial:end create-source-geometry
+
+    // tutorial:begin create-mesh-shading-pipeline
+    private static MeshShadingPipeline CreateMeshShadingPipeline()
+    {
+        string shaderPath = App.ShaderPath("MeshShading.slang");
+
+        ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "ASMain");
+        taskDesc.ThreadGroupSize = new() { X = TaskGroupSize, Y = 1, Z = 1 };
+
+        ShaderDesc meshDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "MSMain");
+        meshDesc.ThreadGroupSize = new() { X = MeshGroupSize, Y = 1, Z = 1 };
+
+        using Shader taskShader = App.Context.CreateShader(taskDesc);
+        using Shader meshShader = App.Context.CreateShader(meshDesc);
+        using Shader fragmentShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+
+        return App.Context.CreateMeshShadingPipeline(new()
+        {
+            TaskShader = taskShader,
+            MeshShader = meshShader,
+            FragmentShader = fragmentShader,
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new()
+            {
+                ColorFormats = [App.ColorFormat],
+                DepthStencilFormat = DepthFormat,
+                SampleCount = SampleCount.Count1
+            },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullBack(),
+                DepthStencil = DepthStencilState.DepthReadWrite(),
+                Blend = BlendState.Opaque()
+            }
+        });
+    }
+    // tutorial:end create-mesh-shading-pipeline
 
     private static Buffer CreateStorageBuffer<T>(T[] data) where T : unmanaged
     {
@@ -282,29 +281,29 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
     {
         return plane / new Vector3(plane.X, plane.Y, plane.Z).Length();
     }
-}
 
-[StructLayout(LayoutKind.Explicit, Size = 32)]
-file struct Vertex
-{
-    [FieldOffset(0)]
-    public Vector3 Position;
+    [StructLayout(LayoutKind.Explicit, Size = 32)]
+    private struct Vertex
+    {
+        [FieldOffset(0)]
+        public Vector3 Position;
 
-    [FieldOffset(16)]
-    public Vector3 Normal;
-}
+        [FieldOffset(16)]
+        public Vector3 Normal;
+    }
 
-[StructLayout(LayoutKind.Explicit, Size = 16)]
-file struct Triangle
-{
-    [FieldOffset(0)]
-    public uint Index0;
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    private struct Triangle
+    {
+        [FieldOffset(0)]
+        public uint Index0;
 
-    [FieldOffset(4)]
-    public uint Index1;
+        [FieldOffset(4)]
+        public uint Index1;
 
-    [FieldOffset(8)]
-    public uint Index2;
+        [FieldOffset(8)]
+        public uint Index2;
+    }
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 256)]

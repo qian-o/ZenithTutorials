@@ -1,4 +1,4 @@
-﻿// tutorial:begin shader-inputs
+﻿// tutorial:begin cube-shader
 struct VSInput
 {
     float3 Position : POSITION0;
@@ -12,9 +12,7 @@ struct FSInput
 
     float4 Color : COLOR0;
 };
-// tutorial:end shader-inputs
 
-// tutorial:begin transform-constants
 struct Constants
 {
     float4x4 Model;
@@ -25,9 +23,7 @@ struct Constants
 };
 
 ConstantBuffer<Constants> constants;
-// tutorial:end transform-constants
 
-// tutorial:begin vertex-stage
 [shader("vertex")]
 FSInput VSMain(VSInput input)
 {
@@ -40,12 +36,10 @@ FSInput VSMain(VSInput input)
 
     return output;
 }
-// tutorial:end vertex-stage
 
-// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(FSInput input) : SV_TARGET
 {
     return input.Color;
 }
-// tutorial:end fragment-stage
+// tutorial:end cube-shader
