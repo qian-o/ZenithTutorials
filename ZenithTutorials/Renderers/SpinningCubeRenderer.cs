@@ -60,6 +60,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
+        // tutorial:begin graphics-pipeline
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
@@ -86,12 +87,14 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
+        // tutorial:end graphics-pipeline
 
         Update(0.0);
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
+    // tutorial:begin transform-constants
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
@@ -114,9 +117,11 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
+    // tutorial:end transform-constants
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        // tutorial:begin record-draw
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
@@ -133,13 +138,16 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         commandBuffer.DrawIndexed(36, 1, 0, 0, 0);
 
         commandBuffer.EndRenderPass();
+        // tutorial:end record-draw
     }
 
+    // tutorial:begin resize-depth
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
         depthTexture = null;
     }
+    // tutorial:end resize-depth
 
     public void Dispose()
     {

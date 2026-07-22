@@ -17,6 +17,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         string texturePath = Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", "shoko.png");
         string shaderPath = App.ShaderPath("ComputeShader.slang");
 
+        // tutorial:begin image-resources
         inputTexture = App.Context.LoadTextureFromFile(texturePath, generateMipMaps: false);
 
         outputTexture = App.Context.CreateTexture(new()
@@ -49,7 +50,9 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
             Pointer = (nint)(&constants),
             SizeInBytes = (uint)sizeof(Constants)
         });
+        // tutorial:end image-resources
 
+        // tutorial:begin compute-and-display-pipelines
         using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
         using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
         using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
@@ -73,6 +76,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
+        // tutorial:end compute-and-display-pipelines
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
@@ -83,6 +87,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        // tutorial:begin record-frame
         uint width = Math.Min(outputTexture.Desc.Width, App.Width);
         uint height = Math.Min(outputTexture.Desc.Height, App.Height);
         int x = (int)((App.Width - width) / 2);
@@ -111,6 +116,7 @@ internal unsafe sealed class ComputeShaderRenderer : IRenderer
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();
+        // tutorial:end record-frame
     }
 
     public void Resize(uint width, uint height)

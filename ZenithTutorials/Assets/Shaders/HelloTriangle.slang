@@ -1,4 +1,5 @@
-﻿struct VSInput
+﻿// tutorial:begin shader-inputs
+struct VSInput
 {
     float3 Position : POSITION0;
 
@@ -11,7 +12,9 @@ struct FSInput
 
     float4 Color : COLOR0;
 };
+// tutorial:end shader-inputs
 
+// tutorial:begin vertex-stage
 [shader("vertex")]
 FSInput VSMain(VSInput input)
 {
@@ -21,9 +24,12 @@ FSInput VSMain(VSInput input)
 
     return output;
 }
+// tutorial:end vertex-stage
 
+// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(FSInput input) : SV_TARGET
 {
     return input.Color;
 }
+// tutorial:end fragment-stage

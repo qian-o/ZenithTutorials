@@ -27,6 +27,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         string shaderPath = App.ShaderPath("RayTracing.slang");
 
+        // tutorial:begin floor-geometry
         Vector3[] floorVertices =
         [
             new(-50.0f, 0.0f, -50.0f),
@@ -38,7 +39,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         floorVertexBuffer = CreateStorageBuffer(floorVertices);
         floorIndexBuffer = CreateStorageBuffer(floorIndices);
+        // tutorial:end floor-geometry
 
+        // tutorial:begin sphere-geometry
         Sphere[] spheres =
         [
             new()
@@ -70,9 +73,11 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
         sphereBuffer = CreateStorageBuffer(spheres);
+        // tutorial:end sphere-geometry
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
+        // tutorial:begin ray-tracing-pipelines
         using Shader computeShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
         using Shader vertexShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
         using Shader fragmentShader = App.Context.CreateShader(ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
@@ -96,7 +101,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
+        // tutorial:end ray-tracing-pipelines
 
+        // tutorial:begin floor-blas
         CommandBuffer buildCommands = App.Context.ComputeQueue.CommandBuffer();
         BottomLevelAccelerationStructureDesc floorDesc = new()
         {
@@ -117,7 +124,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         };
         floorBlas = buildCommands.BuildAccelerationStructure(floorDesc);
+        // tutorial:end floor-blas
 
+        // tutorial:begin sphere-blas
         BottomLevelAccelerationStructureDesc sphereDesc = new()
         {
             Geometries =
@@ -132,7 +141,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
         };
         sphereBlas = buildCommands.BuildAccelerationStructure(sphereDesc);
+        // tutorial:end sphere-blas
 
+        // tutorial:begin top-level-structure
         TopLevelAccelerationStructureDesc desc = new()
         {
             Instances =
@@ -157,6 +168,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         tlas = buildCommands.BuildAccelerationStructure(desc);
 
         buildCommands.Submit().Wait();
+        // tutorial:end top-level-structure
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
@@ -168,6 +180,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        // tutorial:begin frame-resources
         TextureLayout outputLayout = TextureLayout.Sampled;
         if (outputTexture is null)
         {
@@ -193,7 +206,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             Pointer = (nint)(&constants),
             SizeInBytes = (uint)sizeof(Constants)
         });
+        // tutorial:end frame-resources
 
+        // tutorial:begin trace-frame
         commandBuffer.Transition(outputTexture, default, outputLayout, TextureLayout.Storage);
 
         commandBuffer.SetPipeline(rayTracingPipeline);
@@ -201,7 +216,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         commandBuffer.Dispatch((App.Width + ThreadGroupSize - 1) / ThreadGroupSize, (App.Height + ThreadGroupSize - 1) / ThreadGroupSize, 1);
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
+        // tutorial:end trace-frame
 
+        // tutorial:begin display-frame
         commandBuffer.BeginRenderPass([ColorAttachment.DontCare(drawable)], null);
 
         commandBuffer.SetPipeline(displayPipeline);
@@ -209,13 +226,16 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         commandBuffer.Draw(3, 1, 0, 0);
 
         commandBuffer.EndRenderPass();
+        // tutorial:end display-frame
     }
 
+    // tutorial:begin resize-output
     public void Resize(uint width, uint height)
     {
         outputTexture?.Dispose();
         outputTexture = null;
     }
+    // tutorial:end resize-output
 
     public void Dispose()
     {

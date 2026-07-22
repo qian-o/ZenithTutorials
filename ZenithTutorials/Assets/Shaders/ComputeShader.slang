@@ -1,4 +1,5 @@
-﻿struct Constants
+﻿// tutorial:begin shader-resources
+struct Constants
 {
     uint Width;
 
@@ -14,7 +15,9 @@
 };
 
 ConstantBuffer<Constants> constants;
+// tutorial:end shader-resources
 
+// tutorial:begin compute-stage
 [shader("compute")]
 [numthreads(16, 16, 1)]
 void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
@@ -33,7 +36,9 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 
     constants.Output[pixel] = float4(grayscale, grayscale, grayscale, color.a);
 }
+// tutorial:end compute-stage
 
+// tutorial:begin vertex-stage
 struct VSOutput
 {
     float4 Position : SV_POSITION;
@@ -52,9 +57,12 @@ VSOutput VSMain(uint vertexID: SV_VertexID)
 
     return output;
 }
+// tutorial:end vertex-stage
 
+// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(VSOutput input) : SV_TARGET
 {
     return constants.Image.Sample(constants.Sampler, input.TexCoord);
 }
+// tutorial:end fragment-stage

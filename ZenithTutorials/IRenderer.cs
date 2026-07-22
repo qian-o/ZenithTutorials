@@ -1,5 +1,6 @@
 ﻿namespace ZenithTutorials;
 
+// tutorial:begin renderer-contract
 internal interface IRenderer : IDisposable
 {
     TextureLayout RequiredLayout { get; }
@@ -10,3 +11,4 @@ internal interface IRenderer : IDisposable
 
     void Resize(uint width, uint height);
 }
+// tutorial:end renderer-contract

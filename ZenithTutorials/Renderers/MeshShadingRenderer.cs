@@ -26,6 +26,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
 
         string shaderPath = App.ShaderPath("MeshShading.slang");
 
+        // tutorial:begin sphere-vertices
         const int longitudeSegments = 12;
         const int latitudeSegments = 6;
         const float radius = 0.5f;
@@ -64,7 +65,9 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             Position = new(0.0f, -radius, 0.0f),
             Normal = -Vector3.UnitY
         });
+        // tutorial:end sphere-vertices
 
+        // tutorial:begin sphere-triangles
         for (int longitude = 0; longitude < longitudeSegments; longitude++)
         {
             uint next = (uint)((longitude + 1) % longitudeSegments);
@@ -112,12 +115,16 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
                 Index2 = lastRing + (uint)longitude
             });
         }
+        // tutorial:end sphere-triangles
 
+        // tutorial:begin source-buffers
         vertexBuffer = CreateStorageBuffer<Vertex>([.. sphereVertices]);
         triangleBuffer = CreateStorageBuffer<Triangle>([.. sphereTriangles]);
+        // tutorial:end source-buffers
 
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
+        // tutorial:begin mesh-shading-pipeline
         ShaderDesc taskDesc = ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "ASMain");
         taskDesc.ThreadGroupSize = new()
         {
@@ -157,12 +164,14 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
+        // tutorial:end mesh-shading-pipeline
 
         Update(0.0);
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
+    // tutorial:begin culling-constants
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;
@@ -213,9 +222,11 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
+    // tutorial:end culling-constants
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        // tutorial:begin record-draw
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
@@ -230,13 +241,16 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         commandBuffer.DispatchMesh(DispatchGroupCount, 1, 1);
 
         commandBuffer.EndRenderPass();
+        // tutorial:end record-draw
     }
 
+    // tutorial:begin resize-depth
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
         depthTexture = null;
     }
+    // tutorial:end resize-depth
 
     public void Dispose()
     {

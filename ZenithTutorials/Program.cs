@@ -1,6 +1,7 @@
 ﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
+// tutorial:begin tutorial-catalog
 (string Name, string Slug, Action Run, Action<string> Capture)[] tutorials =
 [
     ("Hello Triangle", "hello-triangle", App.Run<HelloTriangleRenderer>,
@@ -18,7 +19,9 @@ using ZenithTutorials.Renderers;
     ("Mesh Shading", "mesh-shading", App.Run<MeshShadingRenderer>,
      path => App.Capture<MeshShadingRenderer>(path, 0.0))
 ];
+// tutorial:end tutorial-catalog
 
+// tutorial:begin capture-command
 if (args is ["--capture", string slug, "--output", string output])
 {
     int tutorialIndex = Array.FindIndex(tutorials, item => item.Slug == slug);
@@ -52,7 +55,9 @@ if (args is ["--capture", string slug, "--output", string output])
 
     return;
 }
+// tutorial:end capture-command
 
+// tutorial:begin interactive-menu
 for (int index = 0; index < tutorials.Length; index++)
 {
     Console.WriteLine($"{index + 1}. {tutorials[index].Name}");
@@ -68,3 +73,4 @@ if (int.TryParse(Console.ReadKey().KeyChar.ToString(), out int choice) &&
 
     tutorials[choice - 1].Run();
 }
+// tutorial:end interactive-menu

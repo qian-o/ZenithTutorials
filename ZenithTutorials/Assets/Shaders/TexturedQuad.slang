@@ -1,4 +1,5 @@
-﻿struct VSInput
+﻿// tutorial:begin shader-inputs
+struct VSInput
 {
     float3 Position : POSITION0;
 
@@ -11,7 +12,9 @@ struct FSInput
 
     float2 TexCoord : TEXCOORD0;
 };
+// tutorial:end shader-inputs
 
+// tutorial:begin shader-resources
 struct Constants
 {
     DescriptorHandle<Texture2D> Texture;
@@ -20,7 +23,9 @@ struct Constants
 };
 
 ConstantBuffer<Constants> constants;
+// tutorial:end shader-resources
 
+// tutorial:begin vertex-stage
 [shader("vertex")]
 FSInput VSMain(VSInput input)
 {
@@ -30,9 +35,12 @@ FSInput VSMain(VSInput input)
 
     return output;
 }
+// tutorial:end vertex-stage
 
+// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(FSInput input) : SV_TARGET
 {
     return constants.Texture.Sample(constants.Sampler, input.TexCoord);
 }
+// tutorial:end fragment-stage

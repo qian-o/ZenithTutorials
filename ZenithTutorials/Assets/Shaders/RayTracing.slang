@@ -15,6 +15,7 @@ static const float3 LightDir = float3(0.6667, 0.6667, -0.3333);
 static const float3 LightColor = float3(1.0, 0.98, 0.95);
 static const float3 AmbientColor = float3(0.15, 0.15, 0.2);
 
+// tutorial:begin shader-bindings
 struct Constants
 {
     private float4 PositionAndPadding;
@@ -36,7 +37,9 @@ struct Constants
         }
     }
 };
+// tutorial:end shader-bindings
 
+// tutorial:begin sphere-data
 struct Sphere
 {
     private float4 CenterAndRadius;
@@ -66,6 +69,7 @@ struct Sphere
 };
 
 ConstantBuffer<Constants> constants;
+// tutorial:end sphere-data
 
 float3 SampleSky(float3 direction)
 {
@@ -224,6 +228,7 @@ float3 TraceReflection(float3 origin, float3 direction)
     }
 }
 
+// tutorial:begin sphere-intersection
 float IntersectSphere(float3 origin, float3 direction, Sphere sphere)
 {
     float3 oc = origin - sphere.Center;
@@ -252,6 +257,7 @@ float IntersectSphere(float3 origin, float3 direction, Sphere sphere)
 
     return -1.0;
 }
+// tutorial:end sphere-intersection
 
 float2 FwidthApprox(float2 p)
 {
@@ -374,6 +380,7 @@ float3 ShadePrimarySphere(float3 hitPoint, float3 rayDir, float3 cameraPos, floa
     return lerp(directColor, reflectColor, fresnel);
 }
 
+// tutorial:begin primary-ray
 [shader("compute")]
 [numthreads(16, 16, 1)]
 void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
@@ -410,7 +417,9 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
     ray.Direction = rayDir;
     ray.TMin = RayEpsilon;
     ray.TMax = 1000.0;
+// tutorial:end primary-ray
 
+// tutorial:begin inline-ray-query
     float3 sphereHitNormal = float3(0.0);
     float3 sphereHitColor = float3(0.0);
 
@@ -440,7 +449,9 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
             }
         }
     }
+// tutorial:end inline-ray-query
 
+// tutorial:begin shade-output
     float3 color;
 
     if (query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
@@ -462,7 +473,9 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
 
     constants.OutputTexture[pixelCoord] = float4(color, 1.0);
 }
+// tutorial:end shade-output
 
+// tutorial:begin vertex-stage
 struct DisplayOutput
 {
     float4 Position : SV_POSITION;
@@ -481,9 +494,12 @@ DisplayOutput VSMain(uint vertexID: SV_VertexID)
 
     return output;
 }
+// tutorial:end vertex-stage
 
+// tutorial:begin fragment-stage
 [shader("fragment")]
 float4 FSMain(DisplayOutput input) : SV_TARGET
 {
     return constants.Image.Sample(constants.Sampler, input.TexCoord);
 }
+// tutorial:end fragment-stage

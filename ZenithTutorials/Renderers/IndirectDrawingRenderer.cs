@@ -42,11 +42,13 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             4, 5, 1, 4, 1, 0
         ];
 
+        // tutorial:begin indirect-arguments
         IndirectDrawIndexedArgs arguments = new()
         {
             IndexCount = (uint)indices.Length,
             InstanceCount = InstanceCount
         };
+        // tutorial:end indirect-arguments
 
         fixed (Vertex* pointer = vertices)
         {
@@ -68,16 +70,19 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
 
+        // tutorial:begin indirect-buffer
         indirectBuffer = App.Context.CreateBuffer(BufferDesc.Indirect((uint)sizeof(IndirectDrawIndexedArgs)));
         indirectBuffer.Upload(0, new()
         {
             Pointer = (nint)(&arguments),
             SizeInBytes = (uint)sizeof(IndirectDrawIndexedArgs)
         });
+        // tutorial:end indirect-buffer
 
         instanceBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)sizeof(Instance) * InstanceCount, (uint)sizeof(Instance)));
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
+        // tutorial:begin graphics-pipeline
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
         inputLayout.Add(new() { Format = ElementFormat.Float4, Semantic = ElementSemantic.Color });
@@ -104,6 +109,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
                 Blend = BlendState.Opaque()
             }
         });
+        // tutorial:end graphics-pipeline
 
         Resize(App.Width, App.Height);
         Update(0.0);
@@ -111,6 +117,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
+    // tutorial:begin instance-data
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;
@@ -141,9 +148,11 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             });
         }
     }
+    // tutorial:end instance-data
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
+        // tutorial:begin record-draw
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
@@ -160,8 +169,10 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         commandBuffer.DrawIndexedIndirect(indirectBuffer, 0, 1);
 
         commandBuffer.EndRenderPass();
+        // tutorial:end record-draw
     }
 
+    // tutorial:begin resize-resources
     public void Resize(uint width, uint height)
     {
         depthTexture?.Dispose();
@@ -180,6 +191,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
     }
+    // tutorial:end resize-resources
 
     public void Dispose()
     {
