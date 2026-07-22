@@ -18,9 +18,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
     private Texture? outputTexture;
     private float totalTime;
 
-    // tutorial:begin initialize-renderer
     public RayTracingRenderer()
     {
+        // tutorial:begin initialize-renderer
         if (!App.Context.Capabilities.RayTracingSupported)
         {
             throw new PlatformNotSupportedException("Ray Tracing is not supported by the selected device.");
@@ -28,18 +28,114 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         string shaderPath = App.ShaderPath("RayTracing.slang");
 
-        var scene = CreateSceneGeometry();
-        floorVertexBuffer = scene.FloorVertices;
-        floorIndexBuffer = scene.FloorIndices;
-        aabbBuffer = scene.Aabbs;
-        sphereBuffer = scene.Spheres;
-
         constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
-        (rayTracingPipeline, displayPipeline) = CreatePipelines(shaderPath);
-        (floorBlas, sphereBlas, tlas) = BuildAccelerationStructures(scene);
+        using Shader computeShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
+        using Shader vertexShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
+        using Shader fragmentShader = App.Context.CreateShader(
+            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
+
+        rayTracingPipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
+        displayPipeline = App.Context.CreateGraphicsPipeline(new()
+        {
+            VertexShader = vertexShader,
+            FragmentShader = fragmentShader,
+            InputLayouts = [],
+            PrimitiveTopology = PrimitiveTopology.TriangleList,
+            AttachmentFormats = new() { ColorFormats = [App.ColorFormat], SampleCount = SampleCount.Count1 },
+            RenderState = new()
+            {
+                Rasterizer = RasterizerState.CullNone(),
+                DepthStencil = DepthStencilState.DepthNone(),
+                Blend = BlendState.Opaque()
+            }
+        });
+        // tutorial:end initialize-renderer
+
+        // tutorial:begin create-scene-geometry
+        Vector3[] floorVertices =
+        [
+            new(-50.0f, 0.0f, -50.0f),
+            new(50.0f, 0.0f, -50.0f),
+            new(50.0f, 0.0f, 50.0f),
+            new(-50.0f, 0.0f, 50.0f)
+        ];
+        uint[] floorIndices = [0, 1, 2, 0, 2, 3];
+
+        Sphere[] spheres =
+        [
+            new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
+            new() { Center = new(2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
+            new() { Center = new(0.0f, 0.6f, -3.0f), Radius = 0.6f, Color = new(0.9f, 0.7f, 0.2f) }
+        ];
+
+        Vector3[] aabbs = new Vector3[spheres.Length * 2];
+        for (int index = 0; index < spheres.Length; index++)
+        {
+            aabbs[index * 2] = spheres[index].Center - new Vector3(spheres[index].Radius);
+            aabbs[(index * 2) + 1] = spheres[index].Center + new Vector3(spheres[index].Radius);
+        }
+
+        floorVertexBuffer = CreateStorageBuffer(floorVertices);
+        floorIndexBuffer = CreateStorageBuffer(floorIndices);
+        aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
+        sphereBuffer = CreateStorageBuffer(spheres);
+        // tutorial:end create-scene-geometry
+
+        // tutorial:begin build-acceleration-structures
+        CommandBuffer commands = App.Context.ComputeQueue.CommandBuffer();
+
+        BottomLevelAccelerationStructureDesc floorDesc = new()
+        {
+            Geometries =
+            [
+                RayTracingGeometry.Triangles(new()
+                {
+                    VertexBuffer = floorVertexBuffer,
+                    VertexFormat = PixelFormat.R32G32B32Float,
+                    VertexCount = (uint)floorVertices.Length,
+                    VertexStrideInBytes = (uint)sizeof(Vector3),
+                    IndexBuffer = floorIndexBuffer,
+                    IndexFormat = IndexFormat.UInt32,
+                    IndexCount = (uint)floorIndices.Length,
+                    Transform = Matrix4x4.Identity
+                }, true)
+            ],
+            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
+        };
+        floorBlas = commands.BuildAccelerationStructure(floorDesc);
+
+        BottomLevelAccelerationStructureDesc sphereDesc = new()
+        {
+            Geometries =
+            [
+                RayTracingGeometry.Aabbs(new()
+                {
+                    Buffer = aabbBuffer,
+                    Count = (uint)spheres.Length,
+                    StrideInBytes = (uint)(sizeof(Vector3) * 2)
+                }, true)
+            ],
+            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
+        };
+        sphereBlas = commands.BuildAccelerationStructure(sphereDesc);
+
+        TopLevelAccelerationStructureDesc sceneDesc = new()
+        {
+            Instances =
+            [
+                new() { AccelerationStructure = floorBlas, InstanceId = 0, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity },
+                new() { AccelerationStructure = sphereBlas, InstanceId = 1, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity }
+            ],
+            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
+        };
+        tlas = commands.BuildAccelerationStructure(sceneDesc);
+
+        commands.Submit().Wait();
+        // tutorial:end build-acceleration-structures
     }
-    // tutorial:end initialize-renderer
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
 
@@ -117,130 +213,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         aabbBuffer.Dispose();
         floorIndexBuffer.Dispose();
         floorVertexBuffer.Dispose();
-    }
-
-    // tutorial:begin create-scene-geometry
-    private static (Buffer FloorVertices, Buffer FloorIndices, Buffer Aabbs, Buffer Spheres,
-                    uint FloorVertexCount, uint FloorIndexCount, uint SphereCount) CreateSceneGeometry()
-    {
-        Vector3[] floorVertices =
-        [
-            new(-50.0f, 0.0f, -50.0f),
-            new(50.0f, 0.0f, -50.0f),
-            new(50.0f, 0.0f, 50.0f),
-            new(-50.0f, 0.0f, 50.0f)
-        ];
-        uint[] floorIndices = [0, 1, 2, 0, 2, 3];
-
-        Sphere[] spheres =
-        [
-            new() { Center = new(-2.0f, 1.0f, 1.0f), Radius = 1.0f, Color = new(0.8f, 0.2f, 0.2f) },
-            new() { Center = new(2.0f, 1.2f, -1.0f), Radius = 1.2f, Color = new(0.2f, 0.4f, 0.8f) },
-            new() { Center = new(0.0f, 0.6f, -3.0f), Radius = 0.6f, Color = new(0.9f, 0.7f, 0.2f) }
-        ];
-
-        Vector3[] aabbs = new Vector3[spheres.Length * 2];
-        for (int index = 0; index < spheres.Length; index++)
-        {
-            aabbs[index * 2] = spheres[index].Center - new Vector3(spheres[index].Radius);
-            aabbs[(index * 2) + 1] = spheres[index].Center + new Vector3(spheres[index].Radius);
-        }
-
-        return (CreateStorageBuffer(floorVertices),
-                CreateStorageBuffer(floorIndices),
-                CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2)),
-                CreateStorageBuffer(spheres),
-                (uint)floorVertices.Length,
-                (uint)floorIndices.Length,
-                (uint)spheres.Length);
-    }
-    // tutorial:end create-scene-geometry
-
-    // tutorial:begin build-acceleration-structures
-    private static (BottomLevelAccelerationStructure Floor,
-                    BottomLevelAccelerationStructure Spheres,
-                    TopLevelAccelerationStructure Scene) BuildAccelerationStructures(
-        (Buffer FloorVertices, Buffer FloorIndices, Buffer Aabbs, Buffer Spheres,
-         uint FloorVertexCount, uint FloorIndexCount, uint SphereCount) geometry)
-    {
-        CommandBuffer commands = App.Context.ComputeQueue.CommandBuffer();
-
-        BottomLevelAccelerationStructureDesc floorDesc = new()
-        {
-            Geometries =
-            [
-                RayTracingGeometry.Triangles(new()
-                {
-                    VertexBuffer = geometry.FloorVertices,
-                    VertexFormat = PixelFormat.R32G32B32Float,
-                    VertexCount = geometry.FloorVertexCount,
-                    VertexStrideInBytes = (uint)sizeof(Vector3),
-                    IndexBuffer = geometry.FloorIndices,
-                    IndexFormat = IndexFormat.UInt32,
-                    IndexCount = geometry.FloorIndexCount,
-                    Transform = Matrix4x4.Identity
-                }, true)
-            ],
-            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        BottomLevelAccelerationStructure floor = commands.BuildAccelerationStructure(floorDesc);
-
-        BottomLevelAccelerationStructureDesc sphereDesc = new()
-        {
-            Geometries =
-            [
-                RayTracingGeometry.Aabbs(new()
-                {
-                    Buffer = geometry.Aabbs,
-                    Count = geometry.SphereCount,
-                    StrideInBytes = (uint)(sizeof(Vector3) * 2)
-                }, true)
-            ],
-            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        BottomLevelAccelerationStructure spheres = commands.BuildAccelerationStructure(sphereDesc);
-
-        TopLevelAccelerationStructureDesc sceneDesc = new()
-        {
-            Instances =
-            [
-                new() { AccelerationStructure = floor, InstanceId = 0, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity },
-                new() { AccelerationStructure = spheres, InstanceId = 1, VisibilityMask = 0xFF, Transform = Matrix4x4.Identity }
-            ],
-            BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        TopLevelAccelerationStructure scene = commands.BuildAccelerationStructure(sceneDesc);
-
-        commands.Submit().Wait();
-        return (floor, spheres, scene);
-    }
-    // tutorial:end build-acceleration-structures
-
-    private static (ComputePipeline RayTracing, GraphicsPipeline Display) CreatePipelines(string shaderPath)
-    {
-        using Shader computeShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "CSMain"));
-        using Shader vertexShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "VSMain"));
-        using Shader fragmentShader = App.Context.CreateShader(
-            ZenithCompiler.CompileFromFile(App.Context.GraphicsApi, shaderPath, "FSMain"));
-
-        ComputePipeline rayTracing = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
-        GraphicsPipeline display = App.Context.CreateGraphicsPipeline(new()
-        {
-            VertexShader = vertexShader,
-            FragmentShader = fragmentShader,
-            InputLayouts = [],
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new() { ColorFormats = [App.ColorFormat], SampleCount = SampleCount.Count1 },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullNone(),
-                DepthStencil = DepthStencilState.DepthNone(),
-                Blend = BlendState.Opaque()
-            }
-        });
-        return (rayTracing, display);
     }
 
     private static Buffer CreateStorageBuffer<T>(T[] data, uint strideInBytes = 0) where T : unmanaged
