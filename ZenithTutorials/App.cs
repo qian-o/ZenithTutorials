@@ -43,6 +43,7 @@ internal static class App
     }
     // tutorial:end initialize-graphics-context
 
+    // tutorial:begin shared-services
     public static GraphicsContext Context { get; }
 
     public static Sampler LinearClampSampler { get; }
@@ -57,6 +58,7 @@ internal static class App
     {
         return Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
     }
+    // tutorial:end shared-services
 
     // tutorial:begin run-application
     public static void Run<TRenderer>() where TRenderer : IRenderer, new()
