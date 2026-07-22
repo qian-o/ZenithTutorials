@@ -78,10 +78,29 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             aabbs[(index * 2) + 1] = spheres[index].Center + new Vector3(spheres[index].Radius);
         }
 
-        floorVertexBuffer = CreateStorageBuffer(floorVertices);
-        floorIndexBuffer = CreateStorageBuffer(floorIndices);
-        aabbBuffer = CreateStorageBuffer(aabbs, (uint)(sizeof(Vector3) * 2));
-        sphereBuffer = CreateStorageBuffer(spheres);
+        floorVertexBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Vector3) * floorVertices.Length), (uint)sizeof(Vector3)));
+        fixed (Vector3* pointer = floorVertices)
+        {
+            floorVertexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Vector3) * floorVertices.Length) });
+        }
+
+        floorIndexBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(uint) * floorIndices.Length), (uint)sizeof(uint)));
+        fixed (uint* pointer = floorIndices)
+        {
+            floorIndexBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(uint) * floorIndices.Length) });
+        }
+
+        aabbBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Vector3) * aabbs.Length), (uint)(sizeof(Vector3) * 2)));
+        fixed (Vector3* pointer = aabbs)
+        {
+            aabbBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Vector3) * aabbs.Length) });
+        }
+
+        sphereBuffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(Sphere) * spheres.Length), (uint)sizeof(Sphere)));
+        fixed (Sphere* pointer = spheres)
+        {
+            sphereBuffer.Upload(0, new() { Pointer = (nint)pointer, SizeInBytes = (uint)(sizeof(Sphere) * spheres.Length) });
+        }
         // tutorial:end create-scene-geometry
 
         // tutorial:begin build-acceleration-structures
@@ -150,7 +169,18 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         TextureLayout outputLayout = TextureLayout.Sampled;
         if (outputTexture is null)
         {
-            outputTexture = CreateOutputTexture(App.Width, App.Height);
+            outputTexture = App.Context.CreateTexture(new()
+            {
+                Type = TextureType.Texture2D,
+                Format = PixelFormat.R32G32B32A32Float,
+                Width = App.Width,
+                Height = App.Height,
+                Depth = 1,
+                MipLevels = 1,
+                ArrayLayers = 1,
+                SampleCount = SampleCount.Count1,
+                Usages = TextureUsages.Sampled | TextureUsages.Storage
+            });
             outputLayout = TextureLayout.Undefined;
         }
 
@@ -213,39 +243,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         aabbBuffer.Dispose();
         floorIndexBuffer.Dispose();
         floorVertexBuffer.Dispose();
-    }
-
-    private static Buffer CreateStorageBuffer<T>(T[] data, uint strideInBytes = 0) where T : unmanaged
-    {
-        strideInBytes = strideInBytes is 0 ? (uint)sizeof(T) : strideInBytes;
-        Buffer buffer = App.Context.CreateBuffer(BufferDesc.StorageReadOnly((uint)(sizeof(T) * data.Length), strideInBytes));
-
-        fixed (T* pointer = data)
-        {
-            buffer.Upload(0, new()
-            {
-                Pointer = (nint)pointer,
-                SizeInBytes = (uint)(sizeof(T) * data.Length)
-            });
-        }
-
-        return buffer;
-    }
-
-    private static Texture CreateOutputTexture(uint width, uint height)
-    {
-        return App.Context.CreateTexture(new()
-        {
-            Type = TextureType.Texture2D,
-            Format = PixelFormat.R32G32B32A32Float,
-            Width = width,
-            Height = height,
-            Depth = 1,
-            MipLevels = 1,
-            ArrayLayers = 1,
-            SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.Sampled | TextureUsages.Storage
-        });
     }
 }
 
