@@ -5,7 +5,6 @@ namespace ZenithTutorials;
 
 internal static class ScreenCapture
 {
-    // tutorial:begin capture-screenshot
     public static unsafe void CaptureToFile(CommandBuffer commandBuffer, Texture texture, TextureLayout currentLayout, string filePath)
     {
         uint width = texture.Desc.Width;
@@ -42,5 +41,4 @@ internal static class ScreenCapture
 
         Console.WriteLine($"Screenshot saved to: {filePath}");
     }
-    // tutorial:end capture-screenshot
 }

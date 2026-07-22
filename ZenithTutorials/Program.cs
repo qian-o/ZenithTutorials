@@ -1,5 +1,4 @@
-﻿// tutorial:begin application-entry
-using ZenithTutorials;
+﻿using ZenithTutorials;
 using ZenithTutorials.Renderers;
 
 (string Name, string Slug, Action Run, Action<string> Capture)[] tutorials =
@@ -69,4 +68,3 @@ if (int.TryParse(Console.ReadKey().KeyChar.ToString(), out int choice) &&
 
     tutorials[choice - 1].Run();
 }
-// tutorial:end application-entry

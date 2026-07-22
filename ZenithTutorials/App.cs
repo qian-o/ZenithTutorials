@@ -7,14 +7,14 @@ namespace ZenithTutorials;
 
 internal static class App
 {
-    private const uint CaptureWidth = 1280;
-    private const uint CaptureHeight = 720;
+    private const uint DefaultWidth = 1280;
+    private const uint DefaultHeight = 720;
 
     private static IWindow? window;
     private static SwapChain? swapChain;
 
-    private static uint width = CaptureWidth;
-    private static uint height = CaptureHeight;
+    private static uint width = DefaultWidth;
+    private static uint height = DefaultHeight;
 
     // tutorial:begin initialize-graphics-context
     static App()
@@ -65,7 +65,7 @@ internal static class App
         {
             window = Window.Create(WindowOptions.Default with
             {
-                Size = new((int)CaptureWidth, (int)CaptureHeight),
+                Size = new((int)DefaultWidth, (int)DefaultHeight),
                 API = GraphicsAPI.None,
                 Title = "Zenith.NET Tutorials"
             });
@@ -153,15 +153,14 @@ internal static class App
     }
     // tutorial:end run-application
 
-    // tutorial:begin capture-frame
     public static void Capture<TRenderer>(string filePath, double elapsedTime) where TRenderer : IRenderer, new()
     {
         using Texture drawable = Context.CreateTexture(new()
         {
             Type = TextureType.Texture2D,
             Format = ColorFormat,
-            Width = CaptureWidth,
-            Height = CaptureHeight,
+            Width = DefaultWidth,
+            Height = DefaultHeight,
             Depth = 1,
             MipLevels = 1,
             ArrayLayers = 1,
@@ -179,7 +178,6 @@ internal static class App
         renderer.Render(commandBuffer, drawable);
         ScreenCapture.CaptureToFile(commandBuffer, drawable, renderer.RequiredLayout, filePath);
     }
-    // tutorial:end capture-frame
 
     public static void Shutdown()
     {
