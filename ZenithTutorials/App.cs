@@ -9,6 +9,7 @@ internal unsafe static class App
 {
     private static IWindow? window;
     private static SwapChain? swapChain;
+    private static TexturePresenter? texturePresenter;
 
     static App()
     {
@@ -128,9 +129,15 @@ internal unsafe static class App
             swapChain?.Dispose();
             window?.Dispose();
 
+            texturePresenter?.Dispose();
             LinearClampSampler.Dispose();
             Context.Dispose();
         }
+    }
+
+    public static void PresentTexture(CommandBuffer commandBuffer, Texture drawable, Texture texture, bool fitToWindow)
+    {
+        (texturePresenter ??= new()).Present(commandBuffer, drawable, texture, fitToWindow);
     }
 
     public static Buffer LoadBuffer<T>(T[] data, BufferUsages usages) where T : unmanaged

@@ -8,7 +8,6 @@ internal class ComputeShaderRenderer : IRenderer
     private readonly Texture outputTexture;
     private readonly Buffer constantBuffer;
     private readonly ComputePipeline computePipeline;
-    private readonly GraphicsPipeline displayPipeline;
 
     private bool processed;
 
@@ -34,36 +33,14 @@ internal class ComputeShaderRenderer : IRenderer
             Width = inputTexture.Desc.Width,
             Height = inputTexture.Desc.Height,
             Input = inputTexture.SampledHandle,
-            Output = outputTexture.StorageHandle,
-            Image = outputTexture.SampledHandle,
-            Sampler = App.LinearClampSampler.Handle
+            Output = outputTexture.StorageHandle
         };
 
         constantBuffer = App.LoadBuffer([constants], BufferUsages.Constant);
 
         using Shader computeShader = App.LoadShader("ComputeShader.slang", "CSMain");
-        using Shader vertexShader = App.LoadShader("ComputeShader.slang", "VSMain");
-        using Shader fragmentShader = App.LoadShader("ComputeShader.slang", "FSMain");
 
         computePipeline = App.Context.CreateComputePipeline(new() { ComputeShader = computeShader });
-        displayPipeline = App.Context.CreateGraphicsPipeline(new()
-        {
-            VertexShader = vertexShader,
-            FragmentShader = fragmentShader,
-            InputLayouts = [],
-            PrimitiveTopology = PrimitiveTopology.TriangleList,
-            AttachmentFormats = new()
-            {
-                ColorFormats = [App.ColorFormat],
-                SampleCount = SampleCount.Count1
-            },
-            RenderState = new()
-            {
-                Rasterizer = RasterizerState.CullNone(),
-                DepthStencil = DepthStencilState.DepthNone(),
-                Blend = BlendState.Opaque()
-            }
-        });
     }
 
     public void Update(double deltaTime)
@@ -72,11 +49,6 @@ internal class ComputeShaderRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        uint width = Math.Min(outputTexture.Desc.Width, App.Width);
-        uint height = Math.Min(outputTexture.Desc.Height, App.Height);
-        int x = (int)((App.Width - width) / 2);
-        int y = (int)((App.Height - height) / 2);
-
         if (!processed)
         {
             commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Storage);
@@ -90,16 +62,7 @@ internal class ComputeShaderRenderer : IRenderer
             processed = true;
         }
 
-        commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
-
-        commandBuffer.SetPipeline(displayPipeline);
-        commandBuffer.SetViewports([new() { X = x, Y = y, Width = width, Height = height, MaxDepth = 1.0f }]);
-        commandBuffer.SetScissors([new() { X = x, Y = y, Width = width, Height = height }]);
-        commandBuffer.SetConstantBuffer(constantBuffer, 0);
-
-        commandBuffer.Draw(3, 1, 0, 0);
-
-        commandBuffer.EndRenderPass();
+        App.PresentTexture(commandBuffer, drawable, outputTexture, false);
     }
 
     public void Resize(uint width, uint height)
@@ -108,7 +71,6 @@ internal class ComputeShaderRenderer : IRenderer
 
     public void Dispose()
     {
-        displayPipeline.Dispose();
         computePipeline.Dispose();
         constantBuffer.Dispose();
         outputTexture.Dispose();
@@ -130,10 +92,4 @@ file struct Constants
 
     [FieldOffset(16)]
     public ResourceHandle Output;
-
-    [FieldOffset(24)]
-    public ResourceHandle Image;
-
-    [FieldOffset(32)]
-    public ResourceHandle Sampler;
 }

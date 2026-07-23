@@ -25,10 +25,6 @@ struct Constants
 
     DescriptorHandle<RWTexture2D<float4>> OutputTexture;
 
-    DescriptorHandle<Texture2D> Image;
-
-    DescriptorHandle<SamplerState> Sampler;
-
     property float3 Position
     {
         get {
@@ -460,29 +456,4 @@ void CSMain(uint3 dispatchThreadID: SV_DispatchThreadID)
     color = ACESFilm(color);
 
     constants.OutputTexture[pixelCoord] = float4(color, 1.0);
-}
-
-struct DisplayOutput
-{
-    float4 Position : SV_POSITION;
-
-    float2 TexCoord : TEXCOORD0;
-};
-
-[shader("vertex")]
-DisplayOutput VSMain(uint vertexID: SV_VertexID)
-{
-    float2 texCoord = float2((vertexID << 1) & 2, vertexID & 2);
-
-    DisplayOutput output;
-    output.Position = float4(texCoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
-    output.TexCoord = texCoord;
-
-    return output;
-}
-
-[shader("fragment")]
-float4 FSMain(DisplayOutput input) : SV_TARGET
-{
-    return constants.Image.Sample(constants.Sampler, input.TexCoord);
 }
