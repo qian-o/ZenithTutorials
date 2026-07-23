@@ -122,10 +122,10 @@ internal unsafe static class App
         }
         finally
         {
+            texturePresenter?.Dispose();
             swapChain?.Dispose();
             window?.Dispose();
 
-            texturePresenter?.Dispose();
             Context.Dispose();
         }
     }

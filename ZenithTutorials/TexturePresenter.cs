@@ -1,4 +1,4 @@
-namespace ZenithTutorials;
+﻿namespace ZenithTutorials;
 
 internal unsafe sealed class TexturePresenter : IDisposable
 {
@@ -54,11 +54,14 @@ internal unsafe sealed class TexturePresenter : IDisposable
         });
 
         commandBuffer.BeginRenderPass([ColorAttachment.Clear(drawable, new(0.04f, 0.055f, 0.075f, 1.0f))], null);
+
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetViewports([new() { X = x, Y = y, Width = width, Height = height, MaxDepth = 1.0f }]);
         commandBuffer.SetScissors([new() { X = x, Y = y, Width = width, Height = height }]);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
+
         commandBuffer.Draw(3, 1, 0, 0);
+
         commandBuffer.EndRenderPass();
     }
 
