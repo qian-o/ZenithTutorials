@@ -2,8 +2,6 @@
 
 internal unsafe sealed class SpinningCubeRenderer : IRenderer
 {
-    private const PixelFormat DepthFormat = PixelFormat.D32FloatS8UInt;
-
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
     private readonly Buffer constantBuffer;
@@ -56,7 +54,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
             AttachmentFormats = new()
             {
                 ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
+                DepthStencilFormat = PixelFormat.D32FloatS8UInt,
                 SampleCount = SampleCount.Count1
             },
             RenderState = new()
@@ -92,7 +90,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     {
         if (depthTexture is null)
         {
-            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(PixelFormat.D32FloatS8UInt, App.Width, App.Height, SampleCount.Count1));
 
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }

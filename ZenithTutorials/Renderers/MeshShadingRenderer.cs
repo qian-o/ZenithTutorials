@@ -6,7 +6,6 @@ internal unsafe class MeshShadingRenderer : IRenderer
     private const uint GridSize = 10;
     private const uint TotalInstances = GridSize * GridSize * GridSize;
     private const uint DispatchGroupCount = (TotalInstances + TaskGroupSize - 1) / TaskGroupSize;
-    private const PixelFormat DepthFormat = PixelFormat.D32FloatS8UInt;
 
     private readonly Buffer vertexBuffer;
     private readonly Buffer triangleBuffer;
@@ -125,7 +124,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
             AttachmentFormats = new()
             {
                 ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
+                DepthStencilFormat = PixelFormat.D32FloatS8UInt,
                 SampleCount = SampleCount.Count1
             },
             RenderState = new()
@@ -170,7 +169,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
     {
         if (depthTexture is null)
         {
-            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(PixelFormat.D32FloatS8UInt, App.Width, App.Height, SampleCount.Count1));
 
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }

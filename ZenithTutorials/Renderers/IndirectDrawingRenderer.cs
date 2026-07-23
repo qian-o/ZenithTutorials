@@ -4,7 +4,6 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
 {
     private const uint InstanceCount = 25;
     private const uint GridWidth = 5;
-    private const PixelFormat DepthFormat = PixelFormat.D32FloatS8UInt;
 
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
@@ -68,7 +67,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
             AttachmentFormats = new()
             {
                 ColorFormats = [App.ColorFormat],
-                DepthStencilFormat = DepthFormat,
+                DepthStencilFormat = PixelFormat.D32FloatS8UInt,
                 SampleCount = SampleCount.Count1
             },
             RenderState = new()
@@ -118,7 +117,7 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     {
         if (depthTexture is null)
         {
-            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+            depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(PixelFormat.D32FloatS8UInt, App.Width, App.Height, SampleCount.Count1));
 
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }
