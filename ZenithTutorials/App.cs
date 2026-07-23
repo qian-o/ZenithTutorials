@@ -32,13 +32,9 @@ internal unsafe static class App
         }
 
         Context.ValidationMessage += static (_, args) => Console.WriteLine($"[{args.Severity}] {args.Message}");
-
-        LinearClampSampler = Context.CreateSampler(SamplerDesc.LinearClamp());
     }
 
     public static GraphicsContext Context { get; }
-
-    public static Sampler LinearClampSampler { get; }
 
     public static PixelFormat ColorFormat => PixelFormat.B8G8R8A8UNorm;
 
@@ -130,7 +126,6 @@ internal unsafe static class App
             window?.Dispose();
 
             texturePresenter?.Dispose();
-            LinearClampSampler.Dispose();
             Context.Dispose();
         }
     }

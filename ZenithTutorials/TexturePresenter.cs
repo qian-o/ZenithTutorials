@@ -2,11 +2,13 @@ namespace ZenithTutorials;
 
 internal unsafe sealed class TexturePresenter : IDisposable
 {
+    private readonly Sampler sampler;
     private readonly Buffer constantBuffer;
     private readonly GraphicsPipeline pipeline;
 
     public TexturePresenter()
     {
+        sampler = App.Context.CreateSampler(SamplerDesc.LinearClamp());
         constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         using Shader vertexShader = App.LoadShader("PresentTexture.slang", "VSMain");
@@ -42,7 +44,7 @@ internal unsafe sealed class TexturePresenter : IDisposable
         Constants constants = new()
         {
             Image = texture.SampledHandle,
-            Sampler = App.LinearClampSampler.Handle
+            Sampler = sampler.Handle
         };
 
         constantBuffer.Upload(0, new()
@@ -64,6 +66,7 @@ internal unsafe sealed class TexturePresenter : IDisposable
     {
         pipeline.Dispose();
         constantBuffer.Dispose();
+        sampler.Dispose();
     }
 }
 

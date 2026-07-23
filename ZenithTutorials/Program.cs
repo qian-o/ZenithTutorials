@@ -4,7 +4,6 @@ using ZenithTutorials.Renderers;
 (string Name, Action Run)[] tutorials =
 [
     ("Hello Triangle", App.Run<HelloTriangleRenderer>),
-    ("Textured Quad", App.Run<TexturedQuadRenderer>),
     ("Spinning Cube", App.Run<SpinningCubeRenderer>),
     ("Compute Shader", App.Run<ComputeShaderRenderer>),
     ("Indirect Drawing", App.Run<IndirectDrawingRenderer>),
