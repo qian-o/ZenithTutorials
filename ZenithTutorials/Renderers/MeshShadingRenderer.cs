@@ -232,7 +232,7 @@ file struct FrustumPlanes
 
     public FrustumPlanes(Matrix4x4 matrix)
     {
-        Span<Vector4> planes = new(ref element0);
+        Span<Vector4> planes = this;
         planes[0] = NormalizePlane(new(matrix.M11 + matrix.M14, matrix.M21 + matrix.M24, matrix.M31 + matrix.M34, matrix.M41 + matrix.M44));
         planes[1] = NormalizePlane(new(matrix.M14 - matrix.M11, matrix.M24 - matrix.M21, matrix.M34 - matrix.M31, matrix.M44 - matrix.M41));
         planes[2] = NormalizePlane(new(matrix.M12 + matrix.M14, matrix.M22 + matrix.M24, matrix.M32 + matrix.M34, matrix.M42 + matrix.M44));
