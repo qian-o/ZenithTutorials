@@ -1,12 +1,10 @@
 ﻿static const uint GridSize = 10;
-static const uint TotalInstances = GridSize * GridSize * GridSize;
 static const float InstanceSpacing = 2.5;
 static const uint ASGroupSize = 32;
 static const float BoundingSphereRadius = 0.5;
 
 static const uint SphereVertexCount = 62;
 static const uint SphereTriangleCount = 120;
-static const float GridOffset = float(GridSize - 1) * 0.5 * InstanceSpacing;
 
 struct Vertex
 {
@@ -86,7 +84,7 @@ float3 InstancePosition(uint id)
 {
     uint x, y, z;
     DecomposeInstanceID(id, x, y, z);
-    return float3(x, y, z) * InstanceSpacing - GridOffset;
+    return (float3(x, y, z) - float(GridSize - 1) * 0.5) * InstanceSpacing;
 }
 
 float3 InstanceColor(uint id)
@@ -121,7 +119,7 @@ void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
     uint instanceIndex = groupID * ASGroupSize + groupThreadID;
 
     bool visible = false;
-    if (instanceIndex < TotalInstances)
+    if (instanceIndex < GridSize * GridSize * GridSize)
     {
         float3 worldPos = InstancePosition(instanceIndex);
         visible = !IsFrustumCulled(worldPos, BoundingSphereRadius);

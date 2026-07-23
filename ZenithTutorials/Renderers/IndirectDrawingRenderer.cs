@@ -2,8 +2,7 @@
 
 internal unsafe class IndirectDrawingRenderer : IRenderer
 {
-    private const uint InstanceCount = 25;
-    private const uint GridWidth = 5;
+    private const uint GridSize = 5;
 
     private readonly Buffer vertexBuffer;
     private readonly Buffer indexBuffer;
@@ -42,13 +41,13 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         IndirectDrawIndexedArgs arguments = new()
         {
             IndexCount = (uint)indices.Length,
-            InstanceCount = InstanceCount
+            InstanceCount = GridSize * GridSize
         };
 
         vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
         indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
         indirectBuffer = App.LoadBuffer([arguments], BufferUsages.Indirect);
-        instanceBuffer = App.LoadBuffer(new Instance[InstanceCount], BufferUsages.StorageReadOnly);
+        instanceBuffer = App.LoadBuffer(new Instance[GridSize * GridSize], BufferUsages.StorageReadOnly);
         constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         InputLayout inputLayout = new();
@@ -86,22 +85,22 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
     {
         rotationAngle += (float)deltaTime;
 
-        Instance[] instances = new Instance[InstanceCount];
+        Instance[] instances = new Instance[GridSize * GridSize];
 
         fixed (Instance* pointer = instances)
         {
-            for (uint index = 0; index < InstanceCount; index++)
+            for (uint index = 0; index < GridSize * GridSize; index++)
             {
-                uint x = index % GridWidth;
-                uint y = index / GridWidth;
-                float offsetX = (x - ((GridWidth - 1) * 0.5f)) * 1.5f;
-                float offsetY = (y - ((GridWidth - 1) * 0.5f)) * 1.5f;
+                uint x = index % GridSize;
+                uint y = index / GridSize;
+                float offsetX = (x - ((GridSize - 1) * 0.5f)) * 1.5f;
+                float offsetY = (y - ((GridSize - 1) * 0.5f)) * 1.5f;
                 float rotation = rotationAngle * (1.0f + (index * 0.1f));
 
                 pointer[index] = new()
                 {
                     Model = Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateRotationY(rotation) * Matrix4x4.CreateRotationX(rotation * 0.5f) * Matrix4x4.CreateTranslation(offsetX, offsetY, 0.0f),
-                    Color = new((float)x / GridWidth, (float)y / GridWidth, 1.0f - ((float)x / GridWidth), 1.0f)
+                    Color = new((float)x / GridSize, (float)y / GridSize, 1.0f - ((float)x / GridSize), 1.0f)
                 };
             }
 

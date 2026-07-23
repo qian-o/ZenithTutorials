@@ -2,11 +2,6 @@
 
 internal unsafe class MeshShadingRenderer : IRenderer
 {
-    private const uint TaskGroupSize = 32;
-    private const uint GridSize = 10;
-    private const uint TotalInstances = GridSize * GridSize * GridSize;
-    private const uint DispatchGroupCount = (TotalInstances + TaskGroupSize - 1) / TaskGroupSize;
-
     private readonly Buffer vertexBuffer;
     private readonly Buffer triangleBuffer;
     private readonly Buffer constantBuffer;
@@ -179,7 +174,7 @@ internal unsafe class MeshShadingRenderer : IRenderer
         commandBuffer.SetPipeline(pipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
 
-        commandBuffer.DispatchMesh(DispatchGroupCount, 1, 1);
+        commandBuffer.DispatchMesh(32, 1, 1);
 
         commandBuffer.EndRenderPass();
     }
