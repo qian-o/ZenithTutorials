@@ -156,8 +156,7 @@ void ASMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID)
 [shader("mesh")]
 [numthreads(120, 1, 1)]
 [outputtopology("triangle")]
-void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in payload Payload meshPayload,
-            OutputVertices<VertexOutput, 62> outVertices, OutputIndices<uint3, 120> outIndices)
+void MSMain(uint groupID: SV_GroupID, uint groupThreadID: SV_GroupThreadID, in payload Payload meshPayload, OutputVertices<VertexOutput, 62> outVertices, OutputIndices<uint3, 120> outIndices)
 {
     uint instanceIndex = meshPayload.InstanceIndices[groupID];
     float3 instancePos = InstancePosition(instanceIndex);

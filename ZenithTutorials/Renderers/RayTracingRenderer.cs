@@ -62,14 +62,12 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         Aabb[] aabbs = new Aabb[spheres.Length];
         for (int index = 0; index < spheres.Length; index++)
         {
-            aabbs[index] = new(spheres[index].Center - new Vector3(spheres[index].Radius),
-                               spheres[index].Center + new Vector3(spheres[index].Radius));
+            aabbs[index] = new(spheres[index].Center - new Vector3(spheres[index].Radius), spheres[index].Center + new Vector3(spheres[index].Radius));
         }
 
         aabbBuffer = App.LoadBuffer(aabbs, BufferUsages.StorageReadOnly);
         sphereBuffer = App.LoadBuffer(spheres, BufferUsages.StorageReadOnly);
-
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
+        constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         using Shader computeShader = App.LoadShader("RayTracing.slang", "CSMain");
         using Shader vertexShader = App.LoadShader("RayTracing.slang", "VSMain");
@@ -176,9 +174,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         float angle = totalTime * 0.3f;
         Constants constants = new()
         {
-            Position = new(12.0f * MathF.Sin(angle),
-                           4.0f + MathF.Sin(totalTime * 0.2f),
-                           -12.0f * MathF.Cos(angle)),
+            Position = new(12.0f * MathF.Sin(angle), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(angle)),
             Scene = tlas.Handle,
             Spheres = sphereBuffer.StorageReadOnlyHandle,
             OutputTexture = outputTexture.StorageHandle,

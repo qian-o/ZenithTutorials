@@ -38,7 +38,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
 
         vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
         indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
+        constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
@@ -76,8 +76,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     {
         rotationAngle += (float)deltaTime;
 
-        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) *
-                          Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
+        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) * Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
         Matrix4x4 view = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 3.0f), Vector3.Zero, Vector3.UnitY);
         Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
 

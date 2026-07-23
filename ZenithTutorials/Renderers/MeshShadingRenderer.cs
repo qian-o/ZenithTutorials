@@ -45,9 +45,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
             for (int longitude = 0; longitude < longitudeSegments; longitude++)
             {
                 float theta = 2.0f * MathF.PI * longitude / longitudeSegments;
-                Vector3 normal = new(sinPhi * MathF.Cos(theta),
-                                     cosPhi,
-                                     sinPhi * MathF.Sin(theta));
+                Vector3 normal = new(sinPhi * MathF.Cos(theta), cosPhi, sinPhi * MathF.Sin(theta));
                 sphereVertices.Add(new()
                 {
                     Position = normal * radius,
@@ -158,26 +156,11 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         {
             ViewProjection = viewProjection,
             FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14, viewProjection.M21 + viewProjection.M24, viewProjection.M31 + viewProjection.M34, viewProjection.M41 + viewProjection.M44)),
-            FrustumPlane1 = NormalizePlane(new(viewProjection.M14 - viewProjection.M11,
-                                               viewProjection.M24 - viewProjection.M21,
-                                               viewProjection.M34 - viewProjection.M31,
-                                               viewProjection.M44 - viewProjection.M41)),
-            FrustumPlane2 = NormalizePlane(new(viewProjection.M12 + viewProjection.M14,
-                                               viewProjection.M22 + viewProjection.M24,
-                                               viewProjection.M32 + viewProjection.M34,
-                                               viewProjection.M42 + viewProjection.M44)),
-            FrustumPlane3 = NormalizePlane(new(viewProjection.M14 - viewProjection.M12,
-                                               viewProjection.M24 - viewProjection.M22,
-                                               viewProjection.M34 - viewProjection.M32,
-                                               viewProjection.M44 - viewProjection.M42)),
-            FrustumPlane4 = NormalizePlane(new(viewProjection.M13,
-                                               viewProjection.M23,
-                                               viewProjection.M33,
-                                               viewProjection.M43)),
-            FrustumPlane5 = NormalizePlane(new(viewProjection.M14 - viewProjection.M13,
-                                               viewProjection.M24 - viewProjection.M23,
-                                               viewProjection.M34 - viewProjection.M33,
-                                               viewProjection.M44 - viewProjection.M43)),
+            FrustumPlane1 = NormalizePlane(new(viewProjection.M14 - viewProjection.M11, viewProjection.M24 - viewProjection.M21, viewProjection.M34 - viewProjection.M31, viewProjection.M44 - viewProjection.M41)),
+            FrustumPlane2 = NormalizePlane(new(viewProjection.M12 + viewProjection.M14, viewProjection.M22 + viewProjection.M24, viewProjection.M32 + viewProjection.M34, viewProjection.M42 + viewProjection.M44)),
+            FrustumPlane3 = NormalizePlane(new(viewProjection.M14 - viewProjection.M12, viewProjection.M24 - viewProjection.M22, viewProjection.M34 - viewProjection.M32, viewProjection.M44 - viewProjection.M42)),
+            FrustumPlane4 = NormalizePlane(new(viewProjection.M13, viewProjection.M23, viewProjection.M33, viewProjection.M43)),
+            FrustumPlane5 = NormalizePlane(new(viewProjection.M14 - viewProjection.M13, viewProjection.M24 - viewProjection.M23, viewProjection.M34 - viewProjection.M33, viewProjection.M44 - viewProjection.M43)),
             Time = totalTime,
             LightDirection = -Vector3.Normalize(cameraPosition),
             Vertices = vertexBuffer.StorageReadOnlyHandle,

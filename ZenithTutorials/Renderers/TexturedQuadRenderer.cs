@@ -23,7 +23,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         vertexBuffer = App.LoadBuffer(vertices, BufferUsages.Vertex);
         indexBuffer = App.LoadBuffer(indices, BufferUsages.Index);
         texture = App.LoadTexture("shoko.png", true);
-        constantBuffer = App.Context.CreateBuffer(BufferDesc.Constant((uint)sizeof(Constants)));
 
         Constants constants = new()
         {
@@ -31,11 +30,7 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
             Sampler = App.LinearClampSampler.Handle
         };
 
-        constantBuffer.Upload(0, new()
-        {
-            Pointer = (nint)(&constants),
-            SizeInBytes = (uint)sizeof(Constants)
-        });
+        constantBuffer = App.LoadBuffer([constants], BufferUsages.Constant);
 
         InputLayout inputLayout = new();
         inputLayout.Add(new() { Format = ElementFormat.Float3, Semantic = ElementSemantic.Position });
