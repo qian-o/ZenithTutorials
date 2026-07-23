@@ -99,11 +99,11 @@ internal unsafe static class App
 
                 CommandBuffer commandBuffer = Context.GraphicsQueue.CommandBuffer();
 
-                commandBuffer.Transition(swapChain.Drawable, default, TextureLayout.Undefined, renderer.RequiredLayout);
+                commandBuffer.Transition(swapChain.Drawable, default, TextureLayout.Undefined, TextureLayout.ColorAttachment);
 
                 renderer.Render(commandBuffer, swapChain.Drawable);
 
-                commandBuffer.Transition(swapChain.Drawable, default, renderer.RequiredLayout, TextureLayout.Present);
+                commandBuffer.Transition(swapChain.Drawable, default, TextureLayout.ColorAttachment, TextureLayout.Present);
 
                 commandBuffer.Submit().Wait();
 

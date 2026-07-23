@@ -66,8 +66,6 @@ internal class ComputeShaderRenderer : IRenderer
         });
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
     }

@@ -43,8 +43,6 @@ internal class HelloTriangleRenderer : IRenderer
         });
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
     }

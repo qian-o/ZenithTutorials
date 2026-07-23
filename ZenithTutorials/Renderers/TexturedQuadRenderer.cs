@@ -59,8 +59,6 @@ internal unsafe sealed class TexturedQuadRenderer : IRenderer
         });
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
     }

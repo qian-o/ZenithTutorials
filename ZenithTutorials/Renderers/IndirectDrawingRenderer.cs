@@ -83,8 +83,6 @@ internal unsafe class IndirectDrawingRenderer : IRenderer
         Update(0.0);
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
         rotationAngle += (float)deltaTime;

@@ -139,8 +139,6 @@ internal unsafe class MeshShadingRenderer : IRenderer
         Update(0.0);
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;

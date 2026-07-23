@@ -153,8 +153,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         commandBuffer.Submit().Wait();
     }
 
-    public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
-
     public void Update(double deltaTime)
     {
         totalTime += (float)deltaTime;
