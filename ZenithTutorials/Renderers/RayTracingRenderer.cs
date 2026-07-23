@@ -32,10 +32,8 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             new(50.0f, 0.0f, 50.0f),
             new(-50.0f, 0.0f, 50.0f)
         ];
-        uint[] floorIndices = [0, 1, 2, 0, 2, 3];
 
-        floorVertexBuffer = App.LoadBuffer(floorVertices, BufferUsages.StorageReadOnly);
-        floorIndexBuffer = App.LoadBuffer(floorIndices, BufferUsages.StorageReadOnly);
+        uint[] floorIndices = [0, 1, 2, 0, 2, 3];
 
         Sphere[] spheres =
         [
@@ -65,6 +63,8 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             aabbs[index] = new(spheres[index].Center - new Vector3(spheres[index].Radius), spheres[index].Center + new Vector3(spheres[index].Radius));
         }
 
+        floorVertexBuffer = App.LoadBuffer(floorVertices, BufferUsages.StorageReadOnly);
+        floorIndexBuffer = App.LoadBuffer(floorIndices, BufferUsages.StorageReadOnly);
         aabbBuffer = App.LoadBuffer(aabbs, BufferUsages.StorageReadOnly);
         sphereBuffer = App.LoadBuffer(spheres, BufferUsages.StorageReadOnly);
         constantBuffer = App.LoadBuffer([new Constants()], BufferUsages.Constant);
@@ -93,8 +93,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             }
         });
 
-        CommandBuffer buildCommands = App.Context.ComputeQueue.CommandBuffer();
-        BottomLevelAccelerationStructureDesc floorDesc = new()
+        CommandBuffer commandBuffer = App.Context.ComputeQueue.CommandBuffer();
+
+        floorBlas = commandBuffer.BuildAccelerationStructure(new BottomLevelAccelerationStructureDesc()
         {
             Geometries =
             [
@@ -111,10 +112,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }, true)
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        floorBlas = buildCommands.BuildAccelerationStructure(floorDesc);
+        });
 
-        BottomLevelAccelerationStructureDesc sphereDesc = new()
+        sphereBlas = commandBuffer.BuildAccelerationStructure(new BottomLevelAccelerationStructureDesc()
         {
             Geometries =
             [
@@ -126,10 +126,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }, true)
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        sphereBlas = buildCommands.BuildAccelerationStructure(sphereDesc);
+        });
 
-        TopLevelAccelerationStructureDesc desc = new()
+        tlas = commandBuffer.BuildAccelerationStructure(new TopLevelAccelerationStructureDesc()
         {
             Instances =
             [
@@ -149,10 +148,9 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
                 }
             ],
             BuildFlags = AccelerationStructureBuildFlags.PreferFastTrace
-        };
-        tlas = buildCommands.BuildAccelerationStructure(desc);
+        });
 
-        buildCommands.Submit().Wait();
+        commandBuffer.Submit().Wait();
     }
 
     public TextureLayout RequiredLayout => TextureLayout.ColorAttachment;
@@ -164,17 +162,27 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
     public void Render(CommandBuffer commandBuffer, Texture drawable)
     {
-        TextureLayout outputLayout = TextureLayout.Sampled;
         if (outputTexture is null)
         {
-            outputTexture = CreateOutputTexture(App.Width, App.Height);
-            outputLayout = TextureLayout.Undefined;
+            outputTexture = App.Context.CreateTexture(new()
+            {
+                Type = TextureType.Texture2D,
+                Format = PixelFormat.R32G32B32A32Float,
+                Width = App.Width,
+                Height = App.Height,
+                Depth = 1,
+                MipLevels = 1,
+                ArrayLayers = 1,
+                SampleCount = SampleCount.Count1,
+                Usages = TextureUsages.Sampled | TextureUsages.Storage
+            });
+
+            commandBuffer.Transition(outputTexture, default, TextureLayout.Undefined, TextureLayout.Sampled);
         }
 
-        float angle = totalTime * 0.3f;
         Constants constants = new()
         {
-            Position = new(12.0f * MathF.Sin(angle), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(angle)),
+            Position = new(12.0f * MathF.Sin(totalTime * 0.3f), 4.0f + MathF.Sin(totalTime * 0.2f), -12.0f * MathF.Cos(totalTime * 0.3f)),
             Scene = tlas.Handle,
             Spheres = sphereBuffer.StorageReadOnlyHandle,
             OutputTexture = outputTexture.StorageHandle,
@@ -188,7 +196,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
             SizeInBytes = (uint)sizeof(Constants)
         });
 
-        commandBuffer.Transition(outputTexture, default, outputLayout, TextureLayout.Storage);
+        commandBuffer.Transition(outputTexture, default, TextureLayout.Sampled, TextureLayout.Storage);
 
         commandBuffer.SetPipeline(rayTracingPipeline);
         commandBuffer.SetConstantBuffer(constantBuffer, 0);
@@ -225,22 +233,6 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
         aabbBuffer.Dispose();
         floorIndexBuffer.Dispose();
         floorVertexBuffer.Dispose();
-    }
-
-    private static Texture CreateOutputTexture(uint width, uint height)
-    {
-        return App.Context.CreateTexture(new()
-        {
-            Type = TextureType.Texture2D,
-            Format = PixelFormat.R32G32B32A32Float,
-            Width = width,
-            Height = height,
-            Depth = 1,
-            MipLevels = 1,
-            ArrayLayers = 1,
-            SampleCount = SampleCount.Count1,
-            Usages = TextureUsages.Sampled | TextureUsages.Storage
-        });
     }
 }
 

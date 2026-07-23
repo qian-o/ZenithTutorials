@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal unsafe sealed class HelloTriangleRenderer : IRenderer
+internal class HelloTriangleRenderer : IRenderer
 {
     private readonly Buffer vertexBuffer;
     private readonly GraphicsPipeline pipeline;

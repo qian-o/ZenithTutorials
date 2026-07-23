@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal unsafe sealed class IndirectDrawingRenderer : IRenderer
+internal unsafe class IndirectDrawingRenderer : IRenderer
 {
     private const uint InstanceCount = 25;
     private const uint GridWidth = 5;
@@ -121,6 +121,7 @@ internal unsafe sealed class IndirectDrawingRenderer : IRenderer
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }
 

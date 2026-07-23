@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal unsafe sealed class ComputeShaderRenderer : IRenderer
+internal class ComputeShaderRenderer : IRenderer
 {
     private const uint ThreadGroupSize = 16;
 

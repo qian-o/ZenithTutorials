@@ -1,6 +1,6 @@
 ﻿namespace ZenithTutorials.Renderers;
 
-internal unsafe sealed class MeshShadingRenderer : IRenderer
+internal unsafe class MeshShadingRenderer : IRenderer
 {
     private const uint TaskGroupSize = 32;
     private const uint GridSize = 10;
@@ -179,6 +179,7 @@ internal unsafe sealed class MeshShadingRenderer : IRenderer
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }
 

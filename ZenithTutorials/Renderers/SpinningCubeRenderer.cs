@@ -76,15 +76,11 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
     {
         rotationAngle += (float)deltaTime;
 
-        Matrix4x4 model = Matrix4x4.CreateRotationY(rotationAngle) * Matrix4x4.CreateRotationX(rotationAngle * 0.5f);
-        Matrix4x4 view = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 3.0f), Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f);
-
         Constants constants = new()
         {
-            Model = model,
-            View = view,
-            Projection = projection
+            Model = Matrix4x4.CreateRotationY(rotationAngle) * Matrix4x4.CreateRotationX(rotationAngle * 0.5f),
+            View = Matrix4x4.CreateLookAt(new(0.0f, 0.0f, 3.0f), Vector3.Zero, Vector3.UnitY),
+            Projection = Matrix4x4.CreatePerspectiveFieldOfView(float.DegreesToRadians(45.0f), (float)App.Width / App.Height, 0.1f, 100.0f)
         };
 
         constantBuffer.Upload(0, new()
@@ -99,6 +95,7 @@ internal unsafe sealed class SpinningCubeRenderer : IRenderer
         if (depthTexture is null)
         {
             depthTexture = App.Context.CreateTexture(TextureDesc.DepthStencilAttachment(DepthFormat, App.Width, App.Height, SampleCount.Count1));
+
             commandBuffer.Transition(depthTexture, default, TextureLayout.Undefined, TextureLayout.DepthStencilAttachment);
         }
 
