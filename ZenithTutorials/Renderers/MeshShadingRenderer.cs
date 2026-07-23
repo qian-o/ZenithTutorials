@@ -153,17 +153,17 @@ internal unsafe class MeshShadingRenderer : IRenderer
         Constants constants = new()
         {
             ViewProjection = viewProjection,
-            FrustumPlane0 = NormalizePlane(new(viewProjection.M11 + viewProjection.M14, viewProjection.M21 + viewProjection.M24, viewProjection.M31 + viewProjection.M34, viewProjection.M41 + viewProjection.M44)),
-            FrustumPlane1 = NormalizePlane(new(viewProjection.M14 - viewProjection.M11, viewProjection.M24 - viewProjection.M21, viewProjection.M34 - viewProjection.M31, viewProjection.M44 - viewProjection.M41)),
-            FrustumPlane2 = NormalizePlane(new(viewProjection.M12 + viewProjection.M14, viewProjection.M22 + viewProjection.M24, viewProjection.M32 + viewProjection.M34, viewProjection.M42 + viewProjection.M44)),
-            FrustumPlane3 = NormalizePlane(new(viewProjection.M14 - viewProjection.M12, viewProjection.M24 - viewProjection.M22, viewProjection.M34 - viewProjection.M32, viewProjection.M44 - viewProjection.M42)),
-            FrustumPlane4 = NormalizePlane(new(viewProjection.M13, viewProjection.M23, viewProjection.M33, viewProjection.M43)),
-            FrustumPlane5 = NormalizePlane(new(viewProjection.M14 - viewProjection.M13, viewProjection.M24 - viewProjection.M23, viewProjection.M34 - viewProjection.M33, viewProjection.M44 - viewProjection.M43)),
-            Time = totalTime,
             LightDirection = -Vector3.Normalize(cameraPosition),
             Vertices = vertexBuffer.StorageReadOnlyHandle,
             Triangles = triangleBuffer.StorageReadOnlyHandle
         };
+
+        constants.FrustumPlanes[0] = NormalizePlane(new(viewProjection.M11 + viewProjection.M14, viewProjection.M21 + viewProjection.M24, viewProjection.M31 + viewProjection.M34, viewProjection.M41 + viewProjection.M44));
+        constants.FrustumPlanes[1] = NormalizePlane(new(viewProjection.M14 - viewProjection.M11, viewProjection.M24 - viewProjection.M21, viewProjection.M34 - viewProjection.M31, viewProjection.M44 - viewProjection.M41));
+        constants.FrustumPlanes[2] = NormalizePlane(new(viewProjection.M12 + viewProjection.M14, viewProjection.M22 + viewProjection.M24, viewProjection.M32 + viewProjection.M34, viewProjection.M42 + viewProjection.M44));
+        constants.FrustumPlanes[3] = NormalizePlane(new(viewProjection.M14 - viewProjection.M12, viewProjection.M24 - viewProjection.M22, viewProjection.M34 - viewProjection.M32, viewProjection.M44 - viewProjection.M42));
+        constants.FrustumPlanes[4] = NormalizePlane(new(viewProjection.M13, viewProjection.M23, viewProjection.M33, viewProjection.M43));
+        constants.FrustumPlanes[5] = NormalizePlane(new(viewProjection.M14 - viewProjection.M13, viewProjection.M24 - viewProjection.M23, viewProjection.M34 - viewProjection.M33, viewProjection.M44 - viewProjection.M43));
 
         constantBuffer.Upload(0, new()
         {
@@ -236,6 +236,12 @@ file struct Triangle
     public uint Index2;
 }
 
+[System.Runtime.CompilerServices.InlineArray(6)]
+file struct FrustumPlaneArray
+{
+    private Vector4 element;
+}
+
 [StructLayout(LayoutKind.Explicit, Size = 256)]
 file struct Constants
 {
@@ -243,27 +249,9 @@ file struct Constants
     public Matrix4x4 ViewProjection;
 
     [FieldOffset(64)]
-    public Vector4 FrustumPlane0;
-
-    [FieldOffset(80)]
-    public Vector4 FrustumPlane1;
-
-    [FieldOffset(96)]
-    public Vector4 FrustumPlane2;
-
-    [FieldOffset(112)]
-    public Vector4 FrustumPlane3;
-
-    [FieldOffset(128)]
-    public Vector4 FrustumPlane4;
-
-    [FieldOffset(144)]
-    public Vector4 FrustumPlane5;
+    public FrustumPlaneArray FrustumPlanes;
 
     [FieldOffset(160)]
-    public float Time;
-
-    [FieldOffset(164)]
     public Vector3 LightDirection;
 
     [FieldOffset(176)]

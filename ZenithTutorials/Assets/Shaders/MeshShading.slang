@@ -61,23 +61,16 @@ struct Constants
 
     float4 FrustumPlanes[6];
 
-    private float4 TimeAndLightDirection;
+    private float4 LightDirectionAndPadding;
 
     DescriptorHandle<StructuredBuffer<Vertex>> Vertices;
 
     DescriptorHandle<StructuredBuffer<Triangle>> Triangles;
 
-    property float Time
-    {
-        get {
-            return TimeAndLightDirection.x;
-        }
-    }
-
     property float3 LightDirection
     {
         get {
-            return TimeAndLightDirection.yzw;
+            return LightDirectionAndPadding.xyz;
         }
     }
 };

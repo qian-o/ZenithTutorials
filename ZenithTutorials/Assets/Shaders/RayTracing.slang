@@ -263,6 +263,19 @@ float Hash(float2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
+void BuildOrthonormalBasis(float3 direction, float3 reference, out float3 tangent, out float3 bitangent)
+{
+    tangent = cross(direction, reference);
+    if (dot(tangent, tangent) < 0.000001)
+    {
+        float3 fallback = abs(direction.y) < 0.999 ? float3(0.0, 1.0, 0.0) : float3(1.0, 0.0, 0.0);
+        tangent = cross(direction, fallback);
+    }
+
+    tangent = normalize(tangent);
+    bitangent = cross(direction, tangent);
+}
+
 bool TraceShadowRay(float3 origin, float3 direction)
 {
     RayDesc shadowRay;
@@ -298,8 +311,8 @@ bool TraceShadowRay(float3 origin, float3 direction)
 
 float TraceSoftShadow(float3 origin, float3 direction, float2 pixelSeed)
 {
-    float3 tangent = normalize(cross(direction, float3(0.0, 1.0, 0.0)));
-    float3 bitangent = cross(direction, tangent);
+    float3 tangent, bitangent;
+    BuildOrthonormalBasis(direction, float3(0.0, 1.0, 0.0), tangent, bitangent);
 
     float lit = 0.0;
     for (uint i = 0; i < ShadowSamples; i++)
@@ -320,8 +333,8 @@ float TraceSoftShadow(float3 origin, float3 direction, float2 pixelSeed)
 
 float3 TraceRoughReflection(float3 origin, float3 reflectDir, float3 normal, float roughness, float2 pixelSeed)
 {
-    float3 tangent = normalize(cross(reflectDir, normal));
-    float3 bitangent = cross(reflectDir, tangent);
+    float3 tangent, bitangent;
+    BuildOrthonormalBasis(reflectDir, normal, tangent, bitangent);
 
     float3 accum = float3(0.0);
     for (uint i = 0; i < ReflectionSamples; i++)
