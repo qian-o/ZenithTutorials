@@ -179,7 +179,7 @@ internal unsafe sealed class RayTracingRenderer : IRenderer
 
         commandBuffer.Transition(outputTexture, default, TextureLayout.Storage, TextureLayout.Sampled);
 
-    App.PresentTexture(commandBuffer, drawable, outputTexture, true);
+        App.PresentTexture(commandBuffer, drawable, outputTexture, true);
     }
 
     public void Resize(uint width, uint height)

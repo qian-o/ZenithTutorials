@@ -1,4 +1,4 @@
-struct Constants
+﻿struct Constants
 {
     DescriptorHandle<Texture2D> Image;
 
