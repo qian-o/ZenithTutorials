@@ -6,7 +6,7 @@ using ZenithTutorials.Renderers;
     ("Hello Triangle", App.Run<HelloTriangleRenderer>),
     ("Textured Quad", App.Run<TexturedQuadRenderer>),
     ("Spinning Cube", App.Run<SpinningCubeRenderer>),
-    ("Image Processing", App.Run<ComputeShaderRenderer>),
+    ("Compute Shader", App.Run<ComputeShaderRenderer>),
     ("Indirect Drawing", App.Run<IndirectDrawingRenderer>),
     ("Ray Tracing", App.Run<RayTracingRenderer>),
     ("Mesh Shading", App.Run<MeshShadingRenderer>)

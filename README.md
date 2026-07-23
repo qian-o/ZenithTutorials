@@ -27,7 +27,7 @@ The host uses DirectX 12 on Windows, Metal on macOS, and Vulkan on Linux. The Li
 | Hello Triangle | [HelloTriangleRenderer.cs](ZenithTutorials/Renderers/HelloTriangleRenderer.cs) | [HelloTriangle.slang](ZenithTutorials/Assets/Shaders/HelloTriangle.slang) |
 | Textured Quad | [TexturedQuadRenderer.cs](ZenithTutorials/Renderers/TexturedQuadRenderer.cs) | [TexturedQuad.slang](ZenithTutorials/Assets/Shaders/TexturedQuad.slang) |
 | Spinning Cube | [SpinningCubeRenderer.cs](ZenithTutorials/Renderers/SpinningCubeRenderer.cs) | [SpinningCube.slang](ZenithTutorials/Assets/Shaders/SpinningCube.slang) |
-| Image Processing | [ComputeShaderRenderer.cs](ZenithTutorials/Renderers/ComputeShaderRenderer.cs) | [ComputeShader.slang](ZenithTutorials/Assets/Shaders/ComputeShader.slang) |
+| Compute Shader | [ComputeShaderRenderer.cs](ZenithTutorials/Renderers/ComputeShaderRenderer.cs) | [ComputeShader.slang](ZenithTutorials/Assets/Shaders/ComputeShader.slang) |
 | Indirect Drawing | [IndirectDrawingRenderer.cs](ZenithTutorials/Renderers/IndirectDrawingRenderer.cs) | [IndirectDrawing.slang](ZenithTutorials/Assets/Shaders/IndirectDrawing.slang) |
 | Ray Tracing | [RayTracingRenderer.cs](ZenithTutorials/Renderers/RayTracingRenderer.cs) | [RayTracing.slang](ZenithTutorials/Assets/Shaders/RayTracing.slang) |
 | Mesh Shading | [MeshShadingRenderer.cs](ZenithTutorials/Renderers/MeshShadingRenderer.cs) | [MeshShading.slang](ZenithTutorials/Assets/Shaders/MeshShading.slang) |
