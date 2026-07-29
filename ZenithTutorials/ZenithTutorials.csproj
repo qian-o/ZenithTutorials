@@ -10,10 +10,10 @@
 
     <ItemGroup>
         <PackageReference Include="Silk.NET.Windowing" Version="2.23.0" />
-        <ProjectReference Include="..\..\Zenith.NET\sources\Extensions\Zenith.NET.Extensions.ImageSharp\Zenith.NET.Extensions.ImageSharp.csproj" />
-        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.DirectX12\Zenith.NET.DirectX12.csproj" />
-        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.Metal\Zenith.NET.Metal.csproj" />
-        <ProjectReference Include="..\..\Zenith.NET\sources\Zenith.NET.Vulkan\Zenith.NET.Vulkan.csproj" />
+        <PackageReference Include="Zenith.NET.Extensions.ImageSharp" Version="1.0.0-rc" />
+        <PackageReference Include="Zenith.NET.DirectX12" Version="1.0.0-rc" />
+        <PackageReference Include="Zenith.NET.Metal" Version="1.0.0-rc" />
+        <PackageReference Include="Zenith.NET.Vulkan" Version="1.0.0-rc" />
     </ItemGroup>
 
     <ItemGroup>
