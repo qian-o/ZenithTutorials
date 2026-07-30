@@ -4,9 +4,6 @@ Runnable source for the [Zenith.NET tutorials](https://qian-o.github.io/Zenith.N
 
 This repository contains the runnable tutorial code. The documentation explains each workload and links here for complete, buildable C# and Slang sources.
 
-> [!NOTE]
-> The project uses the `1.0.0-rc` Zenith.NET NuGet packages.
-
 ## Build and Run
 
 Install the .NET 10 SDK, then build and run the project:
