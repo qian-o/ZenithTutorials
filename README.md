@@ -5,7 +5,7 @@ Runnable source for the [Zenith.NET tutorials](https://qian-o.github.io/Zenith.N
 This repository contains the runnable tutorial code. The documentation explains each workload and links here for complete, buildable C# and Slang sources.
 
 > [!NOTE]
-> The project resolves Zenith.NET through local `ProjectReference` items. Keep the Zenith.NET and ZenithTutorials repositories in the same parent directory.
+> The project uses the `1.0.0-rc` Zenith.NET NuGet packages.
 
 ## Build and Run
 
