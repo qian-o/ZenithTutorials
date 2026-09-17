@@ -13,7 +13,7 @@ internal class ComputeShaderRenderer : IRenderer
 
     public ComputeShaderRenderer()
     {
-        inputTexture = App.LoadTexture("shoko.png", false);
+        inputTexture = App.LoadTexture("shoko.png", false, false);
 
         outputTexture = App.Context.CreateTexture(new()
         {

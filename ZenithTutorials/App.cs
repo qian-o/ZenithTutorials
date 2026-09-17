@@ -157,9 +157,9 @@ internal unsafe static class App
         return buffer;
     }
 
-    public static Texture LoadTexture(string file, bool generateMipMaps)
+    public static Texture LoadTexture(string file, bool srgb, bool mipmaps)
     {
-        return Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", file), generateMipMaps);
+        return Context.LoadTextureFromFile(Path.Combine(AppContext.BaseDirectory, "Assets", "Textures", file), srgb, mipmaps);
     }
 
     public static Shader LoadShader(string file, string name)
